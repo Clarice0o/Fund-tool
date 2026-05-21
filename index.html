@@ -135,7 +135,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1100px;
+      min-width: 1200px;
       background: #ffffff;
     }
 
@@ -190,6 +190,16 @@
       color: #94a3b8;
     }
 
+    .industry-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      margin: 2px 4px 2px 0;
+      border-radius: 999px;
+      background: #e0ecff;
+      color: #1d4ed8;
+      font-size: 12px;
+    }
+
     .chart-box {
       height: 380px;
       margin-top: 10px;
@@ -208,6 +218,14 @@
 
     .summary strong {
       color: #1d4ed8;
+    }
+
+    .analysis-box {
+      margin-top: 14px;
+      padding: 14px;
+      background: #f8fbff;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
     }
 
     @media (max-width: 768px) {
@@ -232,7 +250,7 @@
       }
 
       table {
-        min-width: 1000px;
+        min-width: 1100px;
       }
     }
   </style>
@@ -244,7 +262,7 @@
 
   <div class="header">
     <h1>📈 基金持仓与涨幅对比工具</h1>
-    <p>输入多个基金代码，自动抓取基金名称、近一个月涨幅及前五大持仓，并生成对比表和图表。</p>
+    <p>输入多个基金代码，自动抓取基金名称、近一个月涨幅及前五大持仓，并生成对比表、图表和简易分析。</p>
   </div>
 
   <div class="card">
@@ -286,7 +304,7 @@
   </div>
 
   <div class="card">
-    <h2>🤖 简易分析摘要</h2>
+    <h2>🤖 AI 简易分析</h2>
     <div id="summary" class="summary">
       请输入基金代码后点击“确定”生成分析。
     </div>
@@ -296,162 +314,152 @@
 
 <script>
   const API_BASE = "https://long-feather-af2d.claricema.workers.dev";
+
+  let fundData = [];
+  let growthChart = null;
+
   const INDUSTRY_MAP = {
-  // 白酒 / 食品饮料
-  "贵州茅台": "食品饮料 / 白酒",
-  "五粮液": "食品饮料 / 白酒",
-  "泸州老窖": "食品饮料 / 白酒",
-  "山西汾酒": "食品饮料 / 白酒",
-  "洋河股份": "食品饮料 / 白酒",
-  "古井贡酒": "食品饮料 / 白酒",
-  "今世缘": "食品饮料 / 白酒",
-  "舍得酒业": "食品饮料 / 白酒",
-  "迎驾贡酒": "食品饮料 / 白酒",
+    "贵州茅台": "食品饮料 / 白酒",
+    "五粮液": "食品饮料 / 白酒",
+    "泸州老窖": "食品饮料 / 白酒",
+    "山西汾酒": "食品饮料 / 白酒",
+    "洋河股份": "食品饮料 / 白酒",
+    "古井贡酒": "食品饮料 / 白酒",
+    "今世缘": "食品饮料 / 白酒",
+    "舍得酒业": "食品饮料 / 白酒",
+    "迎驾贡酒": "食品饮料 / 白酒",
 
-  // 港股互联网 / 科技
-  "腾讯控股": "互联网 / 科技",
-  "美团-W": "互联网 / 消费服务",
-  "阿里巴巴-W": "互联网 / 电商",
-  "网易-S": "互联网 / 游戏",
-  "快手-W": "互联网 / 内容平台",
-  "小米集团-W": "消费电子 / 科技",
+    "腾讯控股": "互联网 / 科技",
+    "美团-W": "互联网 / 消费服务",
+    "阿里巴巴-W": "互联网 / 电商",
+    "网易-S": "互联网 / 游戏",
+    "快手-W": "互联网 / 内容平台",
+    "小米集团-W": "消费电子 / 科技",
 
-  // 半导体
-  "中芯国际": "半导体",
-  "北方华创": "半导体设备",
-  "海光信息": "半导体 / AI芯片",
-  "寒武纪-U": "半导体 / AI芯片",
-  "兆易创新": "半导体",
+    "中芯国际": "半导体",
+    "北方华创": "半导体设备",
+    "海光信息": "半导体 / AI芯片",
+    "寒武纪-U": "半导体 / AI芯片",
+    "兆易创新": "半导体",
 
-  // 新能源 / 汽车
-  "宁德时代": "新能源 / 电池",
-  "比亚迪": "新能源车",
-  "比亚迪股份": "新能源车",
-  "隆基绿能": "新能源 / 光伏",
-  "阳光电源": "新能源 / 光伏逆变器",
-  "亿纬锂能": "新能源 / 电池",
-  "天齐锂业": "新能源 / 锂资源",
-  "赣锋锂业": "新能源 / 锂资源",
+    "宁德时代": "新能源 / 电池",
+    "比亚迪": "新能源车",
+    "比亚迪股份": "新能源车",
+    "隆基绿能": "新能源 / 光伏",
+    "阳光电源": "新能源 / 光伏逆变器",
+    "亿纬锂能": "新能源 / 电池",
+    "天齐锂业": "新能源 / 锂资源",
+    "赣锋锂业": "新能源 / 锂资源",
 
-  // 医药
-  "恒瑞医药": "医药生物",
-  "迈瑞医疗": "医疗器械",
-  "药明康德": "医药外包 / CXO",
-  "爱尔眼科": "医疗服务",
-  "片仔癀": "中药",
+    "恒瑞医药": "医药生物",
+    "迈瑞医疗": "医疗器械",
+    "药明康德": "医药外包 / CXO",
+    "爱尔眼科": "医疗服务",
+    "片仔癀": "中药",
 
-  // 金融
-  "招商银行": "银行",
-  "平安银行": "银行",
-  "兴业银行": "银行",
-  "工商银行": "银行",
-  "中国平安": "保险",
-  "东方财富": "金融科技 / 券商",
+    "招商银行": "银行",
+    "平安银行": "银行",
+    "兴业银行": "银行",
+    "工商银行": "银行",
+    "中国平安": "保险",
+    "东方财富": "金融科技 / 券商",
 
-  // 消费
-  "伊利股份": "食品饮料 / 乳制品",
-  "海天味业": "食品饮料 / 调味品",
-  "美的集团": "家电",
-  "格力电器": "家电",
-  "海尔智家": "家电",
+    "伊利股份": "食品饮料 / 乳制品",
+    "海天味业": "食品饮料 / 调味品",
+    "美的集团": "家电",
+    "格力电器": "家电",
+    "海尔智家": "家电",
 
-  // 高端制造
-  "立讯精密": "电子制造",
-  "工业富联": "电子制造 / AI服务器",
-  "汇川技术": "工业自动化",
-  "三一重工": "工程机械",
-  "中国中车": "高端装备"
-};
+    "立讯精密": "电子制造",
+    "工业富联": "电子制造 / AI服务器",
+    "汇川技术": "工业自动化",
+    "三一重工": "工程机械",
+    "中国中车": "高端装备"
+  };
 
-function getIndustry(stockName) {
-  if (!stockName) {
+  function getIndustry(stockName) {
+    if (!stockName) {
+      return "其他 / 未识别";
+    }
+
+    if (INDUSTRY_MAP[stockName]) {
+      return INDUSTRY_MAP[stockName];
+    }
+
+    if (stockName.includes("茅台") || stockName.includes("五粮液") || stockName.includes("汾酒") || stockName.includes("老窖") || stockName.includes("洋河")) {
+      return "食品饮料 / 白酒";
+    }
+
+    if (stockName.includes("腾讯") || stockName.includes("美团") || stockName.includes("阿里") || stockName.includes("网易") || stockName.includes("快手")) {
+      return "互联网 / 科技";
+    }
+
+    if (stockName.includes("中芯") || stockName.includes("芯") || stockName.includes("半导体")) {
+      return "半导体";
+    }
+
+    if (stockName.includes("宁德") || stockName.includes("比亚迪") || stockName.includes("锂") || stockName.includes("光伏") || stockName.includes("新能源")) {
+      return "新能源";
+    }
+
+    if (stockName.includes("银行")) {
+      return "银行";
+    }
+
+    if (stockName.includes("医药") || stockName.includes("医疗") || stockName.includes("药明") || stockName.includes("恒瑞")) {
+      return "医药生物";
+    }
+
     return "其他 / 未识别";
   }
 
-  if (INDUSTRY_MAP[stockName]) {
-    return INDUSTRY_MAP[stockName];
-  }
+  function getIndustrySummary(fund) {
+    const industryCounter = {};
 
-  // 模糊识别规则
-  if (stockName.includes("茅台") || stockName.includes("五粮液") || stockName.includes("汾酒") || stockName.includes("老窖")) {
-    return "食品饮料 / 白酒";
-  }
+    (fund.holdings || []).forEach(function(item) {
+      const industry = getIndustry(item.stock);
 
-  if (stockName.includes("腾讯") || stockName.includes("美团") || stockName.includes("阿里") || stockName.includes("网易") || stockName.includes("快手")) {
-    return "互联网 / 科技";
-  }
+      if (!industryCounter[industry]) {
+        industryCounter[industry] = 0;
+      }
 
-  if (stockName.includes("中芯") || stockName.includes("半导体") || stockName.includes("芯")) {
-    return "半导体";
-  }
-
-  if (stockName.includes("宁德") || stockName.includes("比亚迪") || stockName.includes("锂") || stockName.includes("光伏") || stockName.includes("新能源")) {
-    return "新能源";
-  }
-
-  if (stockName.includes("银行")) {
-    return "银行";
-  }
-
-  if (stockName.includes("医药") || stockName.includes("医疗") || stockName.includes("药明") || stockName.includes("恒瑞")) {
-    return "医药生物";
-  }
-
-  return "其他 / 未识别";
-}
-
-function getIndustrySummary(fund) {
-  const industryCounter = {};
-
-  (fund.holdings || []).forEach(function(item) {
-    const industry = getIndustry(item.stock);
-
-    if (!industryCounter[industry]) {
-      industryCounter[industry] = 0;
-    }
-
-    industryCounter[industry]++;
-  });
-
-  const sorted = Object.entries(industryCounter)
-    .sort(function(a, b) {
-      return b[1] - a[1];
+      industryCounter[industry]++;
     });
 
-  return sorted;
-}
-
-function getFundStyleByIndustries(industrySummary) {
-  if (!industrySummary || industrySummary.length === 0) {
-    return "暂无明显风格";
+    return Object.entries(industryCounter).sort(function(a, b) {
+      return b[1] - a[1];
+    });
   }
 
-  const topIndustry = industrySummary[0][0];
+  function getFundStyleByIndustries(industrySummary) {
+    if (!industrySummary || industrySummary.length === 0) {
+      return "暂无明显风格";
+    }
 
-  if (topIndustry.includes("白酒") || topIndustry.includes("食品饮料")) {
-    return "消费 / 白酒集中型";
+    const topIndustry = industrySummary[0][0];
+
+    if (topIndustry.includes("白酒") || topIndustry.includes("食品饮料")) {
+      return "消费 / 白酒集中型";
+    }
+
+    if (topIndustry.includes("互联网") || topIndustry.includes("科技") || topIndustry.includes("半导体")) {
+      return "科技成长型";
+    }
+
+    if (topIndustry.includes("新能源")) {
+      return "新能源成长型";
+    }
+
+    if (topIndustry.includes("银行") || topIndustry.includes("保险")) {
+      return "金融价值型";
+    }
+
+    if (topIndustry.includes("医药")) {
+      return "医药主题型";
+    }
+
+    return "均衡或混合风格";
   }
-
-  if (topIndustry.includes("互联网") || topIndustry.includes("科技") || topIndustry.includes("半导体")) {
-    return "科技成长型";
-  }
-
-  if (topIndustry.includes("新能源")) {
-    return "新能源成长型";
-  }
-
-  if (topIndustry.includes("银行") || topIndustry.includes("保险")) {
-    return "金融价值型";
-  }
-
-  if (topIndustry.includes("医药")) {
-    return "医药主题型";
-  }
-
-  return "均衡或混合风格";
-}
-  let fundData = [];
-  let growthChart = null;
 
   async function loadFunds() {
     const input = document.getElementById("fundCodes").value;
@@ -467,6 +475,15 @@ function getFundStyleByIndustries(industrySummary) {
 
     if (codes.length === 0) {
       alert("请输入基金代码，例如：012348,161725,000001");
+      return;
+    }
+
+    const invalidCodes = codes.filter(function(code) {
+      return !/^\d{6}$/.test(code);
+    });
+
+    if (invalidCodes.length > 0) {
+      alert("以下基金代码格式不正确，请输入6位数字代码：" + invalidCodes.join(", "));
       return;
     }
 
@@ -520,14 +537,19 @@ function getFundStyleByIndustries(industrySummary) {
               <th>近一个月涨幅</th>
               <th>持仓1</th>
               <th>比例1</th>
+              <th>行业1</th>
               <th>持仓2</th>
               <th>比例2</th>
+              <th>行业2</th>
               <th>持仓3</th>
               <th>比例3</th>
+              <th>行业3</th>
               <th>持仓4</th>
               <th>比例4</th>
+              <th>行业4</th>
               <th>持仓5</th>
               <th>比例5</th>
+              <th>行业5</th>
             </tr>
           </thead>
           <tbody>
@@ -560,9 +582,11 @@ function getFundStyleByIndustries(industrySummary) {
           html += `
             <td>${item.stock}</td>
             <td>${item.ratio}</td>
+            <td><span class="industry-tag">${getIndustry(item.stock)}</span></td>
           `;
         } else {
           html += `
+            <td class="empty">暂无</td>
             <td class="empty">暂无</td>
             <td class="empty">暂无</td>
           `;
@@ -647,160 +671,12 @@ function getFundStyleByIndustries(industrySummary) {
     });
   }
 
-const INDUSTRY_MAP = {
-  // 白酒 / 食品饮料
-  "贵州茅台": "食品饮料 / 白酒",
-  "五粮液": "食品饮料 / 白酒",
-  "泸州老窖": "食品饮料 / 白酒",
-  "山西汾酒": "食品饮料 / 白酒",
-  "洋河股份": "食品饮料 / 白酒",
-  "古井贡酒": "食品饮料 / 白酒",
-  "今世缘": "食品饮料 / 白酒",
-  "舍得酒业": "食品饮料 / 白酒",
-  "迎驾贡酒": "食品饮料 / 白酒",
-
-  // 港股互联网 / 科技
-  "腾讯控股": "互联网 / 科技",
-  "美团-W": "互联网 / 消费服务",
-  "阿里巴巴-W": "互联网 / 电商",
-  "网易-S": "互联网 / 游戏",
-  "快手-W": "互联网 / 内容平台",
-  "小米集团-W": "消费电子 / 科技",
-
-  // 半导体
-  "中芯国际": "半导体",
-  "北方华创": "半导体设备",
-  "海光信息": "半导体 / AI芯片",
-  "寒武纪-U": "半导体 / AI芯片",
-  "兆易创新": "半导体",
-
-  // 新能源 / 汽车
-  "宁德时代": "新能源 / 电池",
-  "比亚迪": "新能源车",
-  "比亚迪股份": "新能源车",
-  "隆基绿能": "新能源 / 光伏",
-  "阳光电源": "新能源 / 光伏逆变器",
-  "亿纬锂能": "新能源 / 电池",
-  "天齐锂业": "新能源 / 锂资源",
-  "赣锋锂业": "新能源 / 锂资源",
-
-  // 医药
-  "恒瑞医药": "医药生物",
-  "迈瑞医疗": "医疗器械",
-  "药明康德": "医药外包 / CXO",
-  "爱尔眼科": "医疗服务",
-  "片仔癀": "中药",
-
-  // 金融
-  "招商银行": "银行",
-  "平安银行": "银行",
-  "兴业银行": "银行",
-  "工商银行": "银行",
-  "中国平安": "保险",
-  "东方财富": "金融科技 / 券商",
-
-  // 消费
-  "伊利股份": "食品饮料 / 乳制品",
-  "海天味业": "食品饮料 / 调味品",
-  "美的集团": "家电",
-  "格力电器": "家电",
-  "海尔智家": "家电",
-
-  // 高端制造
-  "立讯精密": "电子制造",
-  "工业富联": "电子制造 / AI服务器",
-  "汇川技术": "工业自动化",
-  "三一重工": "工程机械",
-  "中国中车": "高端装备"
-};
-
-function getIndustry(stockName) {
-  if (!stockName) {
-    return "其他 / 未识别";
-  }
-
-  if (INDUSTRY_MAP[stockName]) {
-    return INDUSTRY_MAP[stockName];
-  }
-
-  // 模糊识别规则
-  if (stockName.includes("茅台") || stockName.includes("五粮液") || stockName.includes("汾酒") || stockName.includes("老窖")) {
-    return "食品饮料 / 白酒";
-  }
-
-  if (stockName.includes("腾讯") || stockName.includes("美团") || stockName.includes("阿里") || stockName.includes("网易") || stockName.includes("快手")) {
-    return "互联网 / 科技";
-  }
-
-  if (stockName.includes("中芯") || stockName.includes("半导体") || stockName.includes("芯")) {
-    return "半导体";
-  }
-
-  if (stockName.includes("宁德") || stockName.includes("比亚迪") || stockName.includes("锂") || stockName.includes("光伏") || stockName.includes("新能源")) {
-    return "新能源";
-  }
-
-  if (stockName.includes("银行")) {
-    return "银行";
-  }
-
-  if (stockName.includes("医药") || stockName.includes("医疗") || stockName.includes("药明") || stockName.includes("恒瑞")) {
-    return "医药生物";
-  }
-
-  return "其他 / 未识别";
-}
-
-function getIndustrySummary(fund) {
-  const industryCounter = {};
-
-  (fund.holdings || []).forEach(function(item) {
-    const industry = getIndustry(item.stock);
-
-    if (!industryCounter[industry]) {
-      industryCounter[industry] = 0;
+  function renderSummary() {
+    if (fundData.length === 0) {
+      document.getElementById("summary").innerHTML =
+        "请输入基金代码后点击“确定”生成分析。";
+      return;
     }
-
-    industryCounter[industry]++;
-  });
-
-  const sorted = Object.entries(industryCounter)
-    .sort(function(a, b) {
-      return b[1] - a[1];
-    });
-
-  return sorted;
-}
-
-function getFundStyleByIndustries(industrySummary) {
-  if (!industrySummary || industrySummary.length === 0) {
-    return "暂无明显风格";
-  }
-
-  const topIndustry = industrySummary[0][0];
-
-  if (topIndustry.includes("白酒") || topIndustry.includes("食品饮料")) {
-    return "消费 / 白酒集中型";
-  }
-
-  if (topIndustry.includes("互联网") || topIndustry.includes("科技") || topIndustry.includes("半导体")) {
-    return "科技成长型";
-  }
-
-  if (topIndustry.includes("新能源")) {
-    return "新能源成长型";
-  }
-
-  if (topIndustry.includes("银行") || topIndustry.includes("保险")) {
-    return "金融价值型";
-  }
-
-  if (topIndustry.includes("医药")) {
-    return "医药主题型";
-  }
-
-  return "均衡或混合风格";
-}
 
     const validGrowth = fundData
       .map(function(fund) {
@@ -818,14 +694,58 @@ function getFundStyleByIndustries(industrySummary) {
         : null;
 
     const stockCounter = {};
+    const industryCounter = {};
+    let fundIndustryHtml = "";
 
     fundData.forEach(function(fund) {
+      const industrySummary = getIndustrySummary(fund);
+      const fundStyle = getFundStyleByIndustries(industrySummary);
+
+      fundIndustryHtml += `
+        <div class="analysis-box">
+          <p style="margin:0 0 8px;">
+            <strong>${fund.name}</strong>
+            <span class="industry-tag">${fundStyle}</span>
+          </p>
+
+          <p style="margin:6px 0;color:#475569;">
+            主要行业：
+            ${
+              industrySummary.length > 0
+                ? industrySummary.map(function(item) {
+                    return item[0] + "（" + item[1] + "项持仓）";
+                  }).join("、")
+                : "暂无可识别行业"
+            }
+          </p>
+
+          <p style="margin:6px 0;color:#64748b;font-size:14px;">
+            前五持仓行业明细：
+            ${
+              (fund.holdings || []).length > 0
+                ? (fund.holdings || []).map(function(item) {
+                    return item.stock + "：" + getIndustry(item.stock);
+                  }).join("；")
+                : "暂无持仓数据"
+            }
+          </p>
+        </div>
+      `;
+
       (fund.holdings || []).forEach(function(item) {
         if (!stockCounter[item.stock]) {
           stockCounter[item.stock] = 0;
         }
 
         stockCounter[item.stock]++;
+
+        const industry = getIndustry(item.stock);
+
+        if (!industryCounter[industry]) {
+          industryCounter[industry] = 0;
+        }
+
+        industryCounter[industry]++;
       });
     });
 
@@ -837,6 +757,12 @@ function getFundStyleByIndustries(industrySummary) {
         return item[0];
       });
 
+    const topIndustries = Object.entries(industryCounter)
+      .sort(function(a, b) {
+        return b[1] - a[1];
+      })
+      .slice(0, 5);
+
     let bestFund = null;
 
     fundData.forEach(function(fund) {
@@ -846,6 +772,32 @@ function getFundStyleByIndustries(industrySummary) {
         }
       }
     });
+
+    let concentrationComment = "";
+
+    if (topIndustries.length > 0) {
+      const topIndustryCount = topIndustries[0][1];
+      const totalHoldingCount = Object.values(industryCounter).reduce(function(a, b) {
+        return a + b;
+      }, 0);
+
+      const concentrationRatio = totalHoldingCount > 0
+        ? topIndustryCount / totalHoldingCount
+        : 0;
+
+      if (concentrationRatio >= 0.5) {
+        concentrationComment =
+          "当前组合行业集中度较高，主要集中在 " + topIndustries[0][0] + "，波动可能受单一板块影响较大。";
+      } else if (concentrationRatio >= 0.3) {
+        concentrationComment =
+          "当前组合存在一定行业偏向，主要集中在 " + topIndustries[0][0] + "，但仍有一定分散度。";
+      } else {
+        concentrationComment =
+          "当前组合行业分布相对分散，单一行业集中度不算明显。";
+      }
+    } else {
+      concentrationComment = "当前行业识别信息有限，建议结合基金季报进一步确认。";
+    }
 
     document.getElementById("summary").innerHTML = `
       <p>✅ 当前共分析 <strong>${fundData.length}</strong> 支基金。</p>
@@ -872,13 +824,31 @@ function getFundStyleByIndustries(industrySummary) {
       </p>
 
       <p>
-        🤖 简易判断：
-        如果多个基金前五持仓高度重合，说明组合分散度可能不足；
-        如果近一个月涨幅差异较大，建议结合基金行业主题、波动率和长期表现进一步比较。
+        🧭 组合主要行业分布：
+        <strong>
+          ${
+            topIndustries.length > 0
+              ? topIndustries.map(function(item) {
+                  return item[0] + "（" + item[1] + "次）";
+                }).join("、")
+              : "暂无可识别行业"
+          }
+        </strong>
       </p>
 
-      <p style="color:#94a3b8;font-size:13px;">
-        注：以上仅为公开数据整理与展示，不构成任何投资建议。
+      <p>
+        💡 简单建议：
+        ${concentrationComment}
+        如果多个基金重仓行业或个股高度重合，组合表面上买了多只基金，但实际分散效果可能有限。
+        可以考虑搭配不同风格基金，例如消费、科技、医药、宽基指数或债券类产品，以降低单一行业波动影响。
+      </p>
+
+      <h3 style="margin-top:22px;color:#1d4ed8;">📌 各基金主要持仓行业分析</h3>
+
+      ${fundIndustryHtml}
+
+      <p style="color:#94a3b8;font-size:13px;margin-top:18px;">
+        注：以上行业分类为基于主要持仓名称的简易识别，仅供公开数据整理和比较参考，不构成任何投资建议。
       </p>
     `;
   }
@@ -909,6 +879,7 @@ function getFundStyleByIndustries(industrySummary) {
 
         row["持仓" + (i + 1)] = item ? item.stock : "";
         row["比例" + (i + 1)] = item ? item.ratio : "";
+        row["行业" + (i + 1)] = item ? getIndustry(item.stock) : "";
       }
 
       return row;
@@ -933,14 +904,19 @@ function getFundStyleByIndustries(industrySummary) {
       "近一个月涨幅",
       "持仓1",
       "比例1",
+      "行业1",
       "持仓2",
       "比例2",
+      "行业2",
       "持仓3",
       "比例3",
+      "行业3",
       "持仓4",
       "比例4",
+      "行业4",
       "持仓5",
-      "比例5"
+      "比例5",
+      "行业5"
     ];
 
     const rows = fundData.map(function(fund) {
@@ -957,6 +933,7 @@ function getFundStyleByIndustries(industrySummary) {
 
         row.push(item ? item.stock : "");
         row.push(item ? item.ratio : "");
+        row.push(item ? getIndustry(item.stock) : "");
       }
 
       return row;
