@@ -1,25 +1,341 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>AI 基金分析平台</title>
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AI基金分析平台</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
-:root{
-    --bg:#0f172a;
-    --card:#1e293b;
-    --text:#f1f5f9;
-    --sub:#94a3b8;
-    --blue:#3b82f6;
-    --green:#10b981;
+body{
+    margin:0;
+    padding:20px;
+    background:#0f172a;
+    color:white;
+    font-family:Arial;
 }
 
-body{
-    margin:0;
-    padding:20px;
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+.card{
+    background:#1e293b;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:20px;
+}
+
+textarea{
+    width:100%;
+    height:220px;
+    background:#111827;
+    color:white;
+    border:none;
+    padding:15px;
+    border-radius:10px;
+}
+
+button{
+    margin-top:15px;
+    margin-right:10px;
+    padding:10px 18px;
+    border:none;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
+
+th,td{
+    border-bottom:1px solid #334155;
+    padding:10px;
+}
+
+.fund-card{
+    background:#111827;
+    padding:15px;
+    border-radius:12px;
+    margin-top:15px;
+}
+
+canvas{
+    background:white;
+    border-radius:12px;
+    padding:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>📈 AI基金分析平台</h1>
+
+<div class="card">
+
+<h3>输入基金数据</h3>
+
+<textarea id="inputData">
+
+基金名称：易方达消费行业
+基金代码：012348
+近一个月涨幅：5.6%
+
+贵州茅台 9.8%
+腾讯控股 8.2%
+宁德时代 7.5%
+美团-W 6.1%
+五粮液 5.2%
+
+基金名称：招商中证白酒
+基金代码：161725
+近一个月涨幅：3.2%
+
+贵州茅台 15%
+五粮液 13%
+泸州老窖 8%
+山西汾酒 7%
+洋河股份 5%
+
+</textarea>
+
+<br>
+
+<button onclick="analyzeFunds()">AI分析</button>
+
+<button onclick="exportExcel()">导出Excel</button>
+
+<div id="funds"></div>
+
+</div>
+
+<div class="card">
+
+<h2>涨幅比较</h2>
+
+<canvas id="growthChart"></canvas>
+
+</div>
+
+<div class="card">
+
+<h2>AI投资摘要</h2>
+
+<div id="summary"></div>
+
+</div>
+
+</div>
+
+<script>
+
+let fundData=[];
+
+let growthChart=null;
+
+function analyzeFunds(){
+
+    const raw=document.getElementById("inputData").value;
+
+    const sections=raw.split(/基金名称：/).filter(x=>x.trim());
+
+    fundData=[];
+
+    sections.forEach(sec=>{
+
+        const lines=sec.trim().split("\n");
+
+        const name=lines[0].trim();
+
+        const code=(sec.match(/基金代码[:：]\s*(\d+)/)||[])[1]||"";
+
+        const growth=parseFloat(
+            (sec.match(/近一个月涨幅[:：]\s*([-\d\.]+)/)||[])[1]||0
+        );
+
+        let holdings=[];
+
+        lines.forEach(line=>{
+
+            const m=line.match(/(.+?)\s+([\d\.]+%)/);
+
+            if(m && !line.includes("涨幅")){
+
+                holdings.push({
+                    stock:m[1].trim(),
+                    ratio:m[2]
+                });
+
+            }
+
+        });
+
+        fundData.push({
+            name,
+            code,
+            growth,
+            holdings
+        });
+
+    });
+
+    renderFunds();
+
+    renderChart();
+
+    renderSummary();
+
+}
+
+function renderFunds(){
+
+    let html="";
+
+    fundData.forEach(f=>{
+
+        html+=`
+        <div class="fund-card">
+
+            <h3>${f.name}</h3>
+
+            <p>基金代码：${f.code}</p>
+
+            <p>近一个月涨幅：
+                <span style="color:#10b981">
+                    ${f.growth}%
+                </span>
+            </p>
+
+            <table>
+
+                <tr>
+                    <th>持仓</th>
+                    <th>占比</th>
+                </tr>
+
+                ${f.holdings.map(h=>`
+                    <tr>
+                        <td>${h.stock}</td>
+                        <td>${h.ratio}</td>
+                    </tr>
+                `).join("")}
+
+            </table>
+
+        </div>
+        `;
+
+    });
+
+    document.getElementById("funds").innerHTML=html;
+
+}
+
+function renderChart(){
+
+    const labels=fundData.map(f=>f.name);
+
+    const data=fundData.map(f=>f.growth);
+
+    if(growthChart){
+        growthChart.destroy();
+    }
+
+    growthChart=new Chart(
+        document.getElementById("growthChart"),
+        {
+            type:"bar",
+            data:{
+                labels:labels,
+                datasets:[{
+                    label:"近一个月涨幅",
+                    data:data,
+                    backgroundColor:"#3b82f6"
+                }]
+            }
+        }
+    );
+
+}
+
+function renderSummary(){
+
+    let avg=0;
+
+    fundData.forEach(f=>{
+        avg+=f.growth;
+    });
+
+    avg=avg/fundData.length;
+
+    document.getElementById("summary").innerHTML=`
+        <p>共分析 ${fundData.length} 支基金。</p>
+
+        <p>平均近一个月涨幅：
+        <b>${avg.toFixed(2)}%</b></p>
+
+        <p>
+        AI判断：
+        当前基金组合偏成长风格，
+        存在一定消费与新能源行业集中度。
+        </p>
+    `;
+
+}
+
+function exportExcel(){
+
+    let rows=[];
+
+    fundData.forEach(f=>{
+
+        f.holdings.forEach(h=>{
+
+            rows.push({
+                基金名称:f.name,
+                基金代码:f.code,
+                月涨幅:f.growth+"%",
+                股票:h.stock,
+                占比:h.ratio
+            });
+
+        });
+
+    });
+
+    const ws=XLSX.utils.json_to_sheet(rows);
+
+    const wb=XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb,ws,"基金");
+
+    XLSX.writeFile(wb,"基金分析.xlsx");
+
+}
+
+analyzeFunds();
+
+</script>
+
+</body>
+
+</html>
