@@ -1,375 +1,559 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基金持仓与涨幅对比工具</title>
 
-<title>AI基金分析平台</title>
+  <!-- 图表库 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- Excel 导出库 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-<style>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-body{
-    margin:0;
-    padding:20px;
-    background:#0f172a;
-    color:white;
-    font-family:Arial;
-}
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f5f8fc;
+      color: #1f2937;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    }
 
-.container{
-    max-width:1200px;
-    margin:auto;
-}
+    .container {
+      max-width: 1380px;
+      margin: 0 auto;
+    }
 
-.card{
-    background:#1e293b;
-    padding:20px;
-    border-radius:12px;
-    margin-bottom:20px;
-}
+    .header {
+      margin-bottom: 24px;
+    }
 
-textarea{
-    width:100%;
-    height:120px;
-    background:#111827;
-    color:white;
-    border:none;
-    padding:15px;
-    border-radius:10px;
-    font-size:16px;
-}
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      color: #1d4ed8;
+    }
 
-button{
-    margin-top:15px;
-    margin-right:10px;
-    padding:10px 18px;
-    border:none;
-    border-radius:8px;
-    background:#2563eb;
-    color:white;
-    cursor:pointer;
-}
+    .header p {
+      margin: 0;
+      color: #64748b;
+      font-size: 15px;
+    }
 
-button:hover{
-    background:#1d4ed8;
-}
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 22px;
+      margin-bottom: 22px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e5edf7;
+    }
 
-.fund-card{
-    background:#111827;
-    padding:15px;
-    border-radius:12px;
-    margin-top:15px;
-}
+    .input-area {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: stretch;
+    }
 
-table{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:10px;
-}
+    input {
+      flex: 1;
+      min-width: 280px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-size: 15px;
+      outline: none;
+    }
 
-th,td{
-    border-bottom:1px solid #334155;
-    padding:8px;
-}
+    input:focus {
+      border-color: #3b82f6;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
 
-canvas{
-    background:white;
-    border-radius:12px;
-    padding:10px;
-}
+    button {
+      padding: 14px 22px;
+      border: none;
+      border-radius: 12px;
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      white-space: nowrap;
+    }
 
-.loading{
-    color:#fbbf24;
-    margin-top:10px;
-}
+    button:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
 
-</style>
+    .secondary-btn {
+      background: #10b981;
+    }
 
+    .secondary-btn:hover {
+      background: #059669;
+    }
+
+    .light-btn {
+      background: #e0ecff;
+      color: #1d4ed8;
+    }
+
+    .light-btn:hover {
+      background: #c7ddff;
+    }
+
+    .hint {
+      margin-top: 12px;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .status {
+      margin-top: 14px;
+      color: #2563eb;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 12px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1100px;
+      background: #ffffff;
+    }
+
+    th {
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-weight: 600;
+      padding: 13px 12px;
+      text-align: left;
+      border-bottom: 1px solid #dbeafe;
+      font-size: 14px;
+    }
+
+    td {
+      padding: 13px 12px;
+      border-bottom: 1px solid #eef2f7;
+      vertical-align: top;
+      font-size: 14px;
+      color: #334155;
+    }
+
+    tr:hover td {
+      background: #f8fbff;
+    }
+
+    .fund-name {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .code {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e0ecff;
+      color: #1d4ed8;
+      font-size: 12px;
+    }
+
+    .positive {
+      color: #059669;
+      font-weight: 700;
+    }
+
+    .negative {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .empty {
+      color: #94a3b8;
+    }
+
+    .chart-box {
+      height: 380px;
+      margin-top: 10px;
+    }
+
+    canvas {
+      background: #ffffff;
+      border-radius: 12px;
+    }
+
+    .summary {
+      line-height: 1.8;
+      color: #475569;
+      font-size: 15px;
+    }
+
+    .summary strong {
+      color: #1d4ed8;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 14px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      input {
+        min-width: 100%;
+      }
+
+      .chart-box {
+        height: 320px;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="container">
 
-<h1>📈 AI基金分析平台</h1>
+  <div class="header">
+    <h1>📈 基金持仓与涨幅对比工具</h1>
+    <p>输入多个基金代码，自动抓取基金名称、近一个月涨幅及前五大持仓，并生成对比表和图表。</p>
+  </div>
 
-<div class="card">
+  <div class="card">
+    <h3>输入基金代码</h3>
 
-<h3>输入多个基金代码</h3>
+    <div class="input-area">
+      <input
+        id="fundCodes"
+        placeholder="例如：012348,161725,000001"
+      />
 
-<textarea id="codes">
-012348
-161725
-</textarea>
+      <button onclick="loadFunds()">确定</button>
 
-<button onclick="loadFunds()">
-自动分析基金
-</button>
+      <button class="secondary-btn" onclick="exportExcel()">导出 Excel</button>
 
-<button onclick="exportExcel()">
-导出Excel
-</button>
+      <button class="light-btn" onclick="exportCSV()">导出 CSV</button>
+    </div>
 
-<div class="loading" id="loading"></div>
+    <div class="hint">
+      多个基金代码请使用英文逗号 <strong>,</strong> 分隔。  
+      示例：<strong>012348,161725,000001</strong>
+    </div>
 
-</div>
+    <div id="status" class="status"></div>
+  </div>
 
-<div id="funds"></div>
+  <div class="card">
+    <h2>📋 基金对比表</h2>
+    <div id="tableContainer"></div>
+  </div>
 
-<div class="card">
+  <div class="card">
+    <h2>📊 近一个月涨幅比较</h2>
+    <div class="chart-box">
+      <canvas id="growthChart"></canvas>
+    </div>
+  </div>
 
-<h2>📊 一个月涨幅比较</h2>
-
-<canvas id="growthChart"></canvas>
-
-</div>
-
-<div class="card">
-
-<h2>🤖 AI投资摘要</h2>
-
-<div id="summary"></div>
-
-</div>
+  <div class="card">
+    <h2>🤖 简易分析摘要</h2>
+    <div id="summary" class="summary">
+      请输入基金代码后点击“确定”生成分析。
+    </div>
+  </div>
 
 </div>
 
 <script>
+  let fundData = [];
+  let growthChart = null;
 
-let fundData=[];
+  const proxyList = [
+    function(url) {
+      return "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+    },
+    function(url) {
+      return "https://corsproxy.io/?" + encodeURIComponent(url);
+    }
+  ];
 
-let growthChart=null;
+  function cleanText(text) {
+    return (text || "")
+      .replace(/\s+/g, " ")
+      .replace(/[\r\n\t]/g, "")
+      .trim();
+  }
 
-async function loadFunds(){
+  async function fetchWithFallback(url) {
+    for (const proxy of proxyList) {
+      try {
+        const response = await fetch(proxy(url));
 
-    document.getElementById("loading").innerHTML="正在自动抓取基金数据...";
-
-    fundData=[];
-
-    const codes=document
-        .getElementById("codes")
-        .value
-        .split("\n")
-        .map(x=>x.trim())
-        .filter(x=>x);
-
-    for(const code of codes){
-
-        try{
-
-            // 基金档案页面
-            const url=`https://fundf10.eastmoney.com/jjcc_${code}.html`;
-
-            const proxy=
-                "https://api.allorigins.win/raw?url="
-                + encodeURIComponent(url);
-
-            const response=await fetch(proxy);
-
-            const html=await response.text();
-
-            const parser=new DOMParser();
-
-            const doc=parser.parseFromString(html,"text/html");
-
-            // 基金名称
-            let name="基金"+code;
-
-            const title=doc.querySelector("title");
-
-            if(title){
-                name=title.innerText.split("(")[0];
-            }
-
-            // 持仓
-            const rows=doc.querySelectorAll("table tbody tr");
-
-            let holdings=[];
-
-            rows.forEach((row,index)=>{
-
-                if(index<5){
-
-                    const tds=row.querySelectorAll("td");
-
-                    if(tds.length>6){
-
-                        holdings.push({
-                            stock:tds[1].innerText.trim(),
-                            ratio:tds[6].innerText.trim()
-                        });
-
-                    }
-
-                }
-
-            });
-
-            // 随机模拟涨幅（真实API容易被拦）
-            const growth=(Math.random()*10).toFixed(2);
-
-            fundData.push({
-                code,
-                name,
-                growth,
-                holdings
-            });
-
-        }catch(e){
-
-            console.log(e);
-
+        if (!response.ok) {
+          continue;
         }
 
-    }
+        const text = await response.text();
 
-    renderFunds();
-
-    renderChart();
-
-    renderSummary();
-
-    document.getElementById("loading").innerHTML="✅ 数据加载完成";
-
-}
-
-function renderFunds(){
-
-    let html="";
-
-    fundData.forEach(f=>{
-
-        html+=`
-
-        <div class="fund-card">
-
-            <h3>${f.name}</h3>
-
-            <p>基金代码：${f.code}</p>
-
-            <p>
-                近一个月涨幅：
-                <span style="color:#10b981">
-                    ${f.growth}%
-                </span>
-            </p>
-
-            <table>
-
-                <tr>
-                    <th>股票</th>
-                    <th>占比</th>
-                </tr>
-
-                ${f.holdings.map(h=>`
-                    <tr>
-                        <td>${h.stock}</td>
-                        <td>${h.ratio}</td>
-                    </tr>
-                `).join("")}
-
-            </table>
-
-        </div>
-
-        `;
-
-    });
-
-    document.getElementById("funds").innerHTML=html;
-
-}
-
-function renderChart(){
-
-    const labels=fundData.map(f=>f.name);
-
-    const data=fundData.map(f=>f.growth);
-
-    if(growthChart){
-        growthChart.destroy();
-    }
-
-    growthChart=new Chart(
-        document.getElementById("growthChart"),
-        {
-            type:"bar",
-            data:{
-                labels:labels,
-                datasets:[{
-                    label:"近一个月涨幅",
-                    data:data,
-                    backgroundColor:"#3b82f6"
-                }]
-            }
+        if (text && text.length > 20) {
+          return text;
         }
-    );
+      } catch (error) {
+        console.log("代理失败，尝试下一个：", error);
+      }
+    }
 
-}
+    throw new Error("所有抓取方式均失败");
+  }
 
-function renderSummary(){
+  async function fetchJsonWithFallback(url) {
+    const text = await fetchWithFallback(url);
 
-    let avg=0;
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      throw new Error("JSON解析失败");
+    }
+  }
 
-    fundData.forEach(f=>avg+=parseFloat(f.growth));
+  async function getFundBasicInfo(code) {
+    const url =
+      "https://fundmobapi.eastmoney.com/FundMApi/FundBaseTypeInformation?FCODE=" +
+      code;
 
-    avg=avg/fundData.length;
+    try {
+      const json = await fetchJsonWithFallback(url);
+      const data = json.Datas || {};
 
-    document.getElementById("summary").innerHTML=`
+      return {
+        name: data.SHORTNAME || data.FNAME || "基金" + code,
+        growth: parseFloat(data.NAVGRL1 || data.SYLD || data.RZDF || 0)
+      };
+    } catch (error) {
+      console.log("基础信息接口失败：", code, error);
 
-        <p>✅ 已分析 ${fundData.length} 支基金</p>
+      return {
+        name: "基金" + code,
+        growth: null
+      };
+    }
+  }
 
-        <p>
-        📈 平均近一个月涨幅：
-        <b>${avg.toFixed(2)}%</b>
-        </p>
+  async function getFundHoldings(code) {
+    const apiUrl =
+      "https://fundmobapi.eastmoney.com/FundMApi/FundMNInverstPosition?FCODE=" +
+      code +
+      "&pageIndex=1&pageSize=5";
 
-        <p>
-        🤖 AI判断：
-        当前基金组合偏成长风格，
-        重点集中于消费、新能源与科技板块。
-        </p>
+    try {
+      const json = await fetchJsonWithFallback(apiUrl);
+      const list = json.Datas || [];
 
-    `;
+      if (list.length > 0) {
+        return list.slice(0, 5).map(function(item) {
+          return {
+            stock: cleanText(item.GPJC || item.GPDM || item.SECCODE || "未知持仓"),
+            ratio: cleanText(item.JZBL || item.PCTNVCHG || item.ZJZBL || "")
+          };
+        });
+      }
+    } catch (error) {
+      console.log("持仓接口失败，尝试网页解析：", code, error);
+    }
 
-}
+    return await getFundHoldingsFromPage(code);
+  }
 
-function exportExcel(){
+  async function getFundHoldingsFromPage(code) {
+    const pageUrl = "https://fundf10.eastmoney.com/jjcc_" + code + ".html";
 
-    let rows=[];
+    try {
+      const html = await fetchWithFallback(pageUrl);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
 
-    fundData.forEach(f=>{
+      const rows = Array.from(doc.querySelectorAll("table tbody tr"));
+      const holdings = [];
 
-        f.holdings.forEach(h=>{
+      rows.forEach(function(row) {
+        if (holdings.length >= 5) {
+          return;
+        }
 
-            rows.push({
-                基金名称:f.name,
-                基金代码:f.code,
-                月涨幅:f.growth+"%",
-                股票:h.stock,
-                占比:h.ratio
-            });
-
+        const cells = Array.from(row.querySelectorAll("td")).map(function(td) {
+          return cleanText(td.innerText);
         });
 
+        if (cells.length >= 6) {
+          const stockName = cells[1] || cells[2] || "";
+          const ratio = cells.find(function(x) {
+            return x.includes("%");
+          }) || "";
+
+          if (stockName && ratio) {
+            holdings.push({
+              stock: stockName,
+              ratio: ratio
+            });
+          }
+        }
+      });
+
+      return holdings;
+    } catch (error) {
+      console.log("网页持仓解析失败：", code, error);
+      return [];
+    }
+  }
+
+  async function loadFunds() {
+    const input = document.getElementById("fundCodes").value;
+
+    const codes = input
+      .split(",")
+      .map(function(x) {
+        return x.trim();
+      })
+      .filter(function(x) {
+        return x;
+      });
+
+    if (codes.length === 0) {
+      alert("请输入基金代码，例如：012348,161725,000001");
+      return;
+    }
+
+    fundData = [];
+    document.getElementById("status").innerHTML =
+      "⏳ 正在抓取基金数据，请稍候...";
+
+    for (let i = 0; i < codes.length; i++) {
+      const code = codes[i];
+
+      document.getElementById("status").innerHTML =
+        "⏳ 正在抓取第 " + (i + 1) + " / " + codes.length + " 支基金：" + code;
+
+      const basicInfo = await getFundBasicInfo(code);
+      const holdings = await getFundHoldings(code);
+
+      fundData.push({
+        code: code,
+        name: basicInfo.name,
+        growth: basicInfo.growth,
+        holdings: holdings
+      });
+    }
+
+    renderTable();
+    renderChart();
+    renderSummary();
+
+    document.getElementById("status").innerHTML =
+      "✅ 数据抓取完成，共分析 " + fundData.length + " 支基金";
+  }
+
+  function renderTable() {
+    if (fundData.length === 0) {
+      document.getElementById("tableContainer").innerHTML =
+        '<p class="empty">暂无数据。</p>';
+      return;
+    }
+
+    let html = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>基金名称</th>
+              <th>基金代码</th>
+              <th>近一个月涨幅</th>
+              <th>持仓1</th>
+              <th>比例1</th>
+              <th>持仓2</th>
+              <th>比例2</th>
+              <th>持仓3</th>
+              <th>比例3</th>
+              <th>持仓4</th>
+              <th>比例4</th>
+              <th>持仓5</th>
+              <th>比例5</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    fundData.forEach(function(fund) {
+      const holdings = fund.holdings || [];
+
+      const growthDisplay =
+        fund.growth === null || isNaN(fund.growth)
+          ? '<span class="empty">暂无数据</span>'
+          : `<span class="${fund.growth >= 0 ? "positive" : "negative"}">${fund.growth.toFixed(2)}%</span>`;
+
+      html += `
+        <tr>
+          <td>
+            <div class="fund-name">${fund.name}</div>
+          </td>
+          <td>
+            <span class="code">${fund.code}</span>
+          </td>
+          <td>${growthDisplay}</td>
+      `;
+
+      for (let i = 0; i < 5; i++) {
+        const item = holdings[i];
+
+        if (item) {
+          html += `
+            <td>${item.stock}</td>
+            <td>${item.ratio}</td>
+          `;
+        } else {
+          html += `
+            <td class="empty">暂无</td>
+            <td class="empty">暂无</td>
+          `;
+        }
+      }
+
+      html += `</tr>`;
     });
 
-    const ws=XLSX.utils.json_to_sheet(rows);
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
 
-    const wb=XLSX.utils.book_new();
+    document.getElementById("tableContainer").innerHTML = html;
+  }
 
-    XLSX.utils.book_append_sheet(wb,ws,"基金分析");
-
-    XLSX.writeFile(wb,"基金分析.xlsx");
-
-}
-
-</script>
-
-</body>
-</html>
+  function renderChart() {
