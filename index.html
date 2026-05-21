@@ -6,10 +6,7 @@
 
   <title>基金持仓与涨幅对比工具</title>
 
-  <!-- 图表库 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Excel 导出库 -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <style>
@@ -233,6 +230,10 @@
       .chart-box {
         height: 320px;
       }
+
+      table {
+        min-width: 1000px;
+      }
     }
   </style>
 </head>
@@ -263,7 +264,7 @@
     </div>
 
     <div class="hint">
-      多个基金代码请使用英文逗号 <strong>,</strong> 分隔。  
+      多个基金代码请使用英文逗号 <strong>,</strong> 分隔。
       示例：<strong>012348,161725,000001</strong>
     </div>
 
@@ -272,7 +273,9 @@
 
   <div class="card">
     <h2>📋 基金对比表</h2>
-    <div id="tableContainer"></div>
+    <div id="tableContainer">
+      <p class="empty">请输入基金代码后点击“确定”。</p>
+    </div>
   </div>
 
   <div class="card">
@@ -292,146 +295,10 @@
 </div>
 
 <script>
+  const API_BASE = "https://long-feather-af2d.claricema.workers.dev";
+
   let fundData = [];
   let growthChart = null;
-
-  const proxyList = [
-    function(url) {
-      return "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
-    },
-    function(url) {
-      return "https://corsproxy.io/?" + encodeURIComponent(url);
-    }
-  ];
-
-  function cleanText(text) {
-    return (text || "")
-      .replace(/\s+/g, " ")
-      .replace(/[\r\n\t]/g, "")
-      .trim();
-  }
-
-  async function fetchWithFallback(url) {
-    for (const proxy of proxyList) {
-      try {
-        const response = await fetch(proxy(url));
-
-        if (!response.ok) {
-          continue;
-        }
-
-        const text = await response.text();
-
-        if (text && text.length > 20) {
-          return text;
-        }
-      } catch (error) {
-        console.log("代理失败，尝试下一个：", error);
-      }
-    }
-
-    throw new Error("所有抓取方式均失败");
-  }
-
-  async function fetchJsonWithFallback(url) {
-    const text = await fetchWithFallback(url);
-
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      throw new Error("JSON解析失败");
-    }
-  }
-
-  async function getFundBasicInfo(code) {
-    const url =
-      "https://fundmobapi.eastmoney.com/FundMApi/FundBaseTypeInformation?FCODE=" +
-      code;
-
-    try {
-      const json = await fetchJsonWithFallback(url);
-      const data = json.Datas || {};
-
-      return {
-        name: data.SHORTNAME || data.FNAME || "基金" + code,
-        growth: parseFloat(data.NAVGRL1 || data.SYLD || data.RZDF || 0)
-      };
-    } catch (error) {
-      console.log("基础信息接口失败：", code, error);
-
-      return {
-        name: "基金" + code,
-        growth: null
-      };
-    }
-  }
-
-  async function getFundHoldings(code) {
-    const apiUrl =
-      "https://fundmobapi.eastmoney.com/FundMApi/FundMNInverstPosition?FCODE=" +
-      code +
-      "&pageIndex=1&pageSize=5";
-
-    try {
-      const json = await fetchJsonWithFallback(apiUrl);
-      const list = json.Datas || [];
-
-      if (list.length > 0) {
-        return list.slice(0, 5).map(function(item) {
-          return {
-            stock: cleanText(item.GPJC || item.GPDM || item.SECCODE || "未知持仓"),
-            ratio: cleanText(item.JZBL || item.PCTNVCHG || item.ZJZBL || "")
-          };
-        });
-      }
-    } catch (error) {
-      console.log("持仓接口失败，尝试网页解析：", code, error);
-    }
-
-    return await getFundHoldingsFromPage(code);
-  }
-
-  async function getFundHoldingsFromPage(code) {
-    const pageUrl = "https://fundf10.eastmoney.com/jjcc_" + code + ".html";
-
-    try {
-      const html = await fetchWithFallback(pageUrl);
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-
-      const rows = Array.from(doc.querySelectorAll("table tbody tr"));
-      const holdings = [];
-
-      rows.forEach(function(row) {
-        if (holdings.length >= 5) {
-          return;
-        }
-
-        const cells = Array.from(row.querySelectorAll("td")).map(function(td) {
-          return cleanText(td.innerText);
-        });
-
-        if (cells.length >= 6) {
-          const stockName = cells[1] || cells[2] || "";
-          const ratio = cells.find(function(x) {
-            return x.includes("%");
-          }) || "";
-
-          if (stockName && ratio) {
-            holdings.push({
-              stock: stockName,
-              ratio: ratio
-            });
-          }
-        }
-      });
-
-      return holdings;
-    } catch (error) {
-      console.log("网页持仓解析失败：", code, error);
-      return [];
-    }
-  }
 
   async function loadFunds() {
     const input = document.getElementById("fundCodes").value;
@@ -450,33 +317,37 @@
       return;
     }
 
-    fundData = [];
     document.getElementById("status").innerHTML =
       "⏳ 正在抓取基金数据，请稍候...";
 
-    for (let i = 0; i < codes.length; i++) {
-      const code = codes[i];
+    try {
+      const apiUrl =
+        API_BASE.replace(/\/$/, "") +
+        "/fund?codes=" +
+        encodeURIComponent(codes.join(","));
+
+      const response = await fetch(apiUrl);
+      const json = await response.json();
+
+      if (!json.success) {
+        throw new Error(json.message || "API返回失败");
+      }
+
+      fundData = json.data || [];
+
+      renderTable();
+      renderChart();
+      renderSummary();
 
       document.getElementById("status").innerHTML =
-        "⏳ 正在抓取第 " + (i + 1) + " / " + codes.length + " 支基金：" + code;
+        "✅ 数据抓取完成，共分析 " + fundData.length + " 支基金";
 
-      const basicInfo = await getFundBasicInfo(code);
-      const holdings = await getFundHoldings(code);
+    } catch (error) {
+      console.error(error);
 
-      fundData.push({
-        code: code,
-        name: basicInfo.name,
-        growth: basicInfo.growth,
-        holdings: holdings
-      });
+      document.getElementById("status").innerHTML =
+        "❌ 数据抓取失败：" + error.message;
     }
-
-    renderTable();
-    renderChart();
-    renderSummary();
-
-    document.getElementById("status").innerHTML =
-      "✅ 数据抓取完成，共分析 " + fundData.length + " 支基金";
   }
 
   function renderTable() {
@@ -515,12 +386,13 @@
       const growthDisplay =
         fund.growth === null || isNaN(fund.growth)
           ? '<span class="empty">暂无数据</span>'
-          : `<span class="${fund.growth >= 0 ? "positive" : "negative"}">${fund.growth.toFixed(2)}%</span>`;
+          : `<span class="${Number(fund.growth) >= 0 ? "positive" : "negative"}">${Number(fund.growth).toFixed(2)}%</span>`;
 
       html += `
         <tr>
           <td>
             <div class="fund-name">${fund.name}</div>
+            ${fund.error ? `<div class="empty">${fund.error}</div>` : ""}
           </td>
           <td>
             <span class="code">${fund.code}</span>
@@ -564,11 +436,19 @@
     });
 
     const data = fundData.map(function(fund) {
-      return fund.growth === null || isNaN(fund.growth) ? 0 : fund.growth;
+      return fund.growth === null || isNaN(fund.growth)
+        ? 0
+        : Number(fund.growth);
     });
 
     if (growthChart) {
       growthChart.destroy();
+    }
+
+    if (typeof Chart === "undefined") {
+      document.getElementById("status").innerHTML +=
+        "；图表组件未加载，但表格数据可正常使用。";
+      return;
     }
 
     growthChart = new Chart(ctx, {
@@ -579,16 +459,9 @@
           {
             label: "近一个月涨幅 (%)",
             data: data,
-            backgroundColor: [
-              "#60a5fa",
-              "#34d399",
-              "#fbbf24",
-              "#f472b6",
-              "#a78bfa",
-              "#38bdf8",
-              "#fb7185",
-              "#4ade80"
-            ],
+            backgroundColor: data.map(function(value) {
+              return value >= 0 ? "#34d399" : "#f87171";
+            }),
             borderRadius: 8
           }
         ]
@@ -639,14 +512,14 @@
     const avgGrowth =
       validGrowth.length > 0
         ? validGrowth.reduce(function(a, b) {
-            return a + b;
+            return Number(a) + Number(b);
           }, 0) / validGrowth.length
         : null;
 
     const stockCounter = {};
 
     fundData.forEach(function(fund) {
-      fund.holdings.forEach(function(item) {
+      (fund.holdings || []).forEach(function(item) {
         if (!stockCounter[item.stock]) {
           stockCounter[item.stock] = 0;
         }
@@ -667,7 +540,7 @@
 
     fundData.forEach(function(fund) {
       if (fund.growth !== null && !isNaN(fund.growth)) {
-        if (!bestFund || fund.growth > bestFund.growth) {
+        if (!bestFund || Number(fund.growth) > Number(bestFund.growth)) {
           bestFund = fund;
         }
       }
@@ -684,9 +557,9 @@
       </p>
 
       <p>
-        🏆 近一个月表现较好的基金：
+        🏆 近一个月表现相对较好的基金：
         <strong>
-          ${bestFund ? bestFund.name + "（" + bestFund.growth.toFixed(2) + "%）" : "暂无数据"}
+          ${bestFund ? bestFund.name + "（" + Number(bestFund.growth).toFixed(2) + "%）" : "暂无数据"}
         </strong>
       </p>
 
@@ -702,12 +575,21 @@
         如果多个基金前五持仓高度重合，说明组合分散度可能不足；
         如果近一个月涨幅差异较大，建议结合基金行业主题、波动率和长期表现进一步比较。
       </p>
+
+      <p style="color:#94a3b8;font-size:13px;">
+        注：以上仅为公开数据整理与展示，不构成任何投资建议。
+      </p>
     `;
   }
 
   function exportExcel() {
     if (fundData.length === 0) {
       alert("请先点击“确定”生成数据");
+      return;
+    }
+
+    if (typeof XLSX === "undefined") {
+      alert("Excel导出组件加载失败，请使用CSV导出");
       return;
     }
 
@@ -718,7 +600,7 @@
         近一个月涨幅:
           fund.growth === null || isNaN(fund.growth)
             ? "暂无数据"
-            : fund.growth.toFixed(2) + "%"
+            : Number(fund.growth).toFixed(2) + "%"
       };
 
       for (let i = 0; i < 5; i++) {
@@ -730,11 +612,6 @@
 
       return row;
     });
-
-    if (typeof XLSX === "undefined") {
-      alert("Excel导出组件加载失败，请使用CSV导出");
-      return;
-    }
 
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -771,7 +648,7 @@
         fund.code,
         fund.growth === null || isNaN(fund.growth)
           ? "暂无数据"
-          : fund.growth.toFixed(2) + "%"
+          : Number(fund.growth).toFixed(2) + "%"
       ];
 
       for (let i = 0; i < 5; i++) {
