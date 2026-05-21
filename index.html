@@ -135,7 +135,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1200px;
+      min-width: 1100px;
       background: #ffffff;
     }
 
@@ -192,11 +192,21 @@
 
     .industry-tag {
       display: inline-block;
-      padding: 3px 8px;
-      margin: 2px 4px 2px 0;
+      padding: 4px 9px;
+      margin: 3px 5px 3px 0;
       border-radius: 999px;
       background: #e0ecff;
       color: #1d4ed8;
+      font-size: 12px;
+    }
+
+    .style-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      margin-left: 8px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #047857;
       font-size: 12px;
     }
 
@@ -250,7 +260,7 @@
       }
 
       table {
-        min-width: 1100px;
+        min-width: 1000px;
       }
     }
   </style>
@@ -271,19 +281,19 @@
     <div class="input-area">
       <input
         id="fundCodes"
-        placeholder="例如：012348,161725,000001"
+        placeholder="例如：012348,161725 或 012348，161725"
       />
 
-      <button onclick="loadFunds()">确定</button>
+      <button type="button" onclick="loadFunds()">确定</button>
 
-      <button class="secondary-btn" onclick="exportExcel()">导出 Excel</button>
+      <button type="button" class="secondary-btn" onclick="exportExcel()">导出 Excel</button>
 
-      <button class="light-btn" onclick="exportCSV()">导出 CSV</button>
+      <button type="button" class="light-btn" onclick="exportCSV()">导出 CSV</button>
     </div>
 
     <div class="hint">
-      多个基金代码请使用英文逗号 <strong>,</strong> 分隔。
-      示例：<strong>012348,161725,000001</strong>
+      多个基金代码支持使用：英文逗号 <strong>,</strong>、中文逗号 <strong>，</strong>、空格、换行、顿号或分号分隔。<br>
+      示例：<strong>012348,161725</strong> 或 <strong>012348，161725</strong>
     </div>
 
     <div id="status" class="status"></div>
@@ -379,26 +389,48 @@
 
   function getIndustry(stockName) {
     if (!stockName) {
-      return "其他 / 未识别";
+      return "未识别";
     }
 
     if (INDUSTRY_MAP[stockName]) {
       return INDUSTRY_MAP[stockName];
     }
 
-    if (stockName.includes("茅台") || stockName.includes("五粮液") || stockName.includes("汾酒") || stockName.includes("老窖") || stockName.includes("洋河")) {
+    if (
+      stockName.includes("茅台") ||
+      stockName.includes("五粮液") ||
+      stockName.includes("汾酒") ||
+      stockName.includes("老窖") ||
+      stockName.includes("洋河")
+    ) {
       return "食品饮料 / 白酒";
     }
 
-    if (stockName.includes("腾讯") || stockName.includes("美团") || stockName.includes("阿里") || stockName.includes("网易") || stockName.includes("快手")) {
+    if (
+      stockName.includes("腾讯") ||
+      stockName.includes("美团") ||
+      stockName.includes("阿里") ||
+      stockName.includes("网易") ||
+      stockName.includes("快手")
+    ) {
       return "互联网 / 科技";
     }
 
-    if (stockName.includes("中芯") || stockName.includes("芯") || stockName.includes("半导体")) {
+    if (
+      stockName.includes("中芯") ||
+      stockName.includes("芯") ||
+      stockName.includes("半导体")
+    ) {
       return "半导体";
     }
 
-    if (stockName.includes("宁德") || stockName.includes("比亚迪") || stockName.includes("锂") || stockName.includes("光伏") || stockName.includes("新能源")) {
+    if (
+      stockName.includes("宁德") ||
+      stockName.includes("比亚迪") ||
+      stockName.includes("锂") ||
+      stockName.includes("光伏") ||
+      stockName.includes("新能源")
+    ) {
       return "新能源";
     }
 
@@ -406,18 +438,31 @@
       return "银行";
     }
 
-    if (stockName.includes("医药") || stockName.includes("医疗") || stockName.includes("药明") || stockName.includes("恒瑞")) {
+    if (
+      stockName.includes("医药") ||
+      stockName.includes("医疗") ||
+      stockName.includes("药明") ||
+      stockName.includes("恒瑞")
+    ) {
       return "医药生物";
     }
 
-    return "其他 / 未识别";
+    return "未识别";
   }
 
-  function getIndustrySummary(fund) {
+  function isRecognizedIndustry(industry) {
+    return industry && industry !== "未识别";
+  }
+
+  function getRecognizedIndustrySummary(fund) {
     const industryCounter = {};
 
     (fund.holdings || []).forEach(function(item) {
       const industry = getIndustry(item.stock);
+
+      if (!isRecognizedIndustry(industry)) {
+        return;
+      }
 
       if (!industryCounter[industry]) {
         industryCounter[industry] = 0;
@@ -442,7 +487,11 @@
       return "消费 / 白酒集中型";
     }
 
-    if (topIndustry.includes("互联网") || topIndustry.includes("科技") || topIndustry.includes("半导体")) {
+    if (
+      topIndustry.includes("互联网") ||
+      topIndustry.includes("科技") ||
+      topIndustry.includes("半导体")
+    ) {
       return "科技成长型";
     }
 
@@ -461,20 +510,23 @@
     return "均衡或混合风格";
   }
 
-  async function loadFunds() {
-    const input = document.getElementById("fundCodes").value;
-
-    const codes = input
-      .split(",")
+  function parseFundCodes(input) {
+    return input
+      .split(/[,，\s;；、]+/)
       .map(function(x) {
         return x.trim();
       })
       .filter(function(x) {
         return x;
       });
+  }
+
+  async function loadFunds() {
+    const input = document.getElementById("fundCodes").value;
+    const codes = parseFundCodes(input);
 
     if (codes.length === 0) {
-      alert("请输入基金代码，例如：012348,161725,000001");
+      alert("请输入基金代码，例如：012348,161725 或 012348，161725");
       return;
     }
 
@@ -537,19 +589,14 @@
               <th>近一个月涨幅</th>
               <th>持仓1</th>
               <th>比例1</th>
-              <th>行业1</th>
               <th>持仓2</th>
               <th>比例2</th>
-              <th>行业2</th>
               <th>持仓3</th>
               <th>比例3</th>
-              <th>行业3</th>
               <th>持仓4</th>
               <th>比例4</th>
-              <th>行业4</th>
               <th>持仓5</th>
               <th>比例5</th>
-              <th>行业5</th>
             </tr>
           </thead>
           <tbody>
@@ -582,11 +629,9 @@
           html += `
             <td>${item.stock}</td>
             <td>${item.ratio}</td>
-            <td><span class="industry-tag">${getIndustry(item.stock)}</span></td>
           `;
         } else {
           html += `
-            <td class="empty">暂无</td>
             <td class="empty">暂无</td>
             <td class="empty">暂无</td>
           `;
@@ -698,14 +743,28 @@
     let fundIndustryHtml = "";
 
     fundData.forEach(function(fund) {
-      const industrySummary = getIndustrySummary(fund);
+      const industrySummary = getRecognizedIndustrySummary(fund);
       const fundStyle = getFundStyleByIndustries(industrySummary);
+
+      const recognizedHoldingDetails = (fund.holdings || [])
+        .map(function(item) {
+          const industry = getIndustry(item.stock);
+
+          if (!isRecognizedIndustry(industry)) {
+            return null;
+          }
+
+          return item.stock + "：" + industry;
+        })
+        .filter(function(x) {
+          return x;
+        });
 
       fundIndustryHtml += `
         <div class="analysis-box">
           <p style="margin:0 0 8px;">
             <strong>${fund.name}</strong>
-            <span class="industry-tag">${fundStyle}</span>
+            <span class="style-tag">${fundStyle}</span>
           </p>
 
           <p style="margin:6px 0;color:#475569;">
@@ -713,20 +772,18 @@
             ${
               industrySummary.length > 0
                 ? industrySummary.map(function(item) {
-                    return item[0] + "（" + item[1] + "项持仓）";
-                  }).join("、")
+                    return '<span class="industry-tag">' + item[0] + '（' + item[1] + '项持仓）</span>';
+                  }).join("")
                 : "暂无可识别行业"
             }
           </p>
 
           <p style="margin:6px 0;color:#64748b;font-size:14px;">
-            前五持仓行业明细：
+            已识别持仓行业明细：
             ${
-              (fund.holdings || []).length > 0
-                ? (fund.holdings || []).map(function(item) {
-                    return item.stock + "：" + getIndustry(item.stock);
-                  }).join("；")
-                : "暂无持仓数据"
+              recognizedHoldingDetails.length > 0
+                ? recognizedHoldingDetails.join("；")
+                : "暂无可识别持仓行业"
             }
           </p>
         </div>
@@ -740,6 +797,10 @@
         stockCounter[item.stock]++;
 
         const industry = getIndustry(item.stock);
+
+        if (!isRecognizedIndustry(industry)) {
+          return;
+        }
 
         if (!industryCounter[industry]) {
           industryCounter[industry] = 0;
@@ -777,26 +838,27 @@
 
     if (topIndustries.length > 0) {
       const topIndustryCount = topIndustries[0][1];
-      const totalHoldingCount = Object.values(industryCounter).reduce(function(a, b) {
+      const totalRecognizedIndustryCount = Object.values(industryCounter).reduce(function(a, b) {
         return a + b;
       }, 0);
 
-      const concentrationRatio = totalHoldingCount > 0
-        ? topIndustryCount / totalHoldingCount
+      const concentrationRatio = totalRecognizedIndustryCount > 0
+        ? topIndustryCount / totalRecognizedIndustryCount
         : 0;
 
       if (concentrationRatio >= 0.5) {
         concentrationComment =
-          "当前组合行业集中度较高，主要集中在 " + topIndustries[0][0] + "，波动可能受单一板块影响较大。";
+          "在已识别行业中，组合集中度较高，主要集中在 " + topIndustries[0][0] + "，波动可能受该板块影响较大。";
       } else if (concentrationRatio >= 0.3) {
         concentrationComment =
-          "当前组合存在一定行业偏向，主要集中在 " + topIndustries[0][0] + "，但仍有一定分散度。";
+          "在已识别行业中，组合存在一定行业偏向，主要集中在 " + topIndustries[0][0] + "，但仍有一定分散度。";
       } else {
         concentrationComment =
-          "当前组合行业分布相对分散，单一行业集中度不算明显。";
+          "在已识别行业中，组合分布相对分散，单一行业集中度不算明显。";
       }
     } else {
-      concentrationComment = "当前行业识别信息有限，建议结合基金季报进一步确认。";
+      concentrationComment =
+        "当前前五持仓中可识别行业较少，建议结合基金季报或基金公司披露文件进一步确认行业分布。";
     }
 
     document.getElementById("summary").innerHTML = `
@@ -824,7 +886,7 @@
       </p>
 
       <p>
-        🧭 组合主要行业分布：
+        🧭 已识别的主要行业分布：
         <strong>
           ${
             topIndustries.length > 0
@@ -839,8 +901,8 @@
       <p>
         💡 简单建议：
         ${concentrationComment}
-        如果多个基金重仓行业或个股高度重合，组合表面上买了多只基金，但实际分散效果可能有限。
-        可以考虑搭配不同风格基金，例如消费、科技、医药、宽基指数或债券类产品，以降低单一行业波动影响。
+        如果多只基金的重仓股或已识别行业高度重合，组合表面上买了多只基金，但实际分散效果可能有限。
+        可以考虑搭配不同风格基金，例如消费、科技、医药、宽基指数或债券类产品，以降低单一板块波动影响。
       </p>
 
       <h3 style="margin-top:22px;color:#1d4ed8;">📌 各基金主要持仓行业分析</h3>
@@ -848,7 +910,7 @@
       ${fundIndustryHtml}
 
       <p style="color:#94a3b8;font-size:13px;margin-top:18px;">
-        注：以上行业分类为基于主要持仓名称的简易识别，仅供公开数据整理和比较参考，不构成任何投资建议。
+        注：行业分类为基于主要持仓名称的简易识别，未识别行业已自动隐藏；以上仅供公开数据整理和比较参考，不构成任何投资建议。
       </p>
     `;
   }
@@ -879,7 +941,6 @@
 
         row["持仓" + (i + 1)] = item ? item.stock : "";
         row["比例" + (i + 1)] = item ? item.ratio : "";
-        row["行业" + (i + 1)] = item ? getIndustry(item.stock) : "";
       }
 
       return row;
@@ -904,19 +965,14 @@
       "近一个月涨幅",
       "持仓1",
       "比例1",
-      "行业1",
       "持仓2",
       "比例2",
-      "行业2",
       "持仓3",
       "比例3",
-      "行业3",
       "持仓4",
       "比例4",
-      "行业4",
       "持仓5",
-      "比例5",
-      "行业5"
+      "比例5"
     ];
 
     const rows = fundData.map(function(fund) {
@@ -933,7 +989,6 @@
 
         row.push(item ? item.stock : "");
         row.push(item ? item.ratio : "");
-        row.push(item ? getIndustry(item.stock) : "");
       }
 
       return row;
