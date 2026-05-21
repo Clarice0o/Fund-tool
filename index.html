@@ -557,3 +557,261 @@
   }
 
   function renderChart() {
+    const ctx = document.getElementById("growthChart");
+
+    const labels = fundData.map(function(fund) {
+      return fund.name || fund.code;
+    });
+
+    const data = fundData.map(function(fund) {
+      return fund.growth === null || isNaN(fund.growth) ? 0 : fund.growth;
+    });
+
+    if (growthChart) {
+      growthChart.destroy();
+    }
+
+    growthChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "近一个月涨幅 (%)",
+            data: data,
+            backgroundColor: [
+              "#60a5fa",
+              "#34d399",
+              "#fbbf24",
+              "#f472b6",
+              "#a78bfa",
+              "#38bdf8",
+              "#fb7185",
+              "#4ade80"
+            ],
+            borderRadius: 8
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return "近一个月涨幅：" + context.raw + "%";
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: function(value) {
+                return value + "%";
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderSummary() {
+    if (fundData.length === 0) {
+      document.getElementById("summary").innerHTML =
+        "请输入基金代码后点击“确定”生成分析。";
+      return;
+    }
+
+    const validGrowth = fundData
+      .map(function(fund) {
+        return fund.growth;
+      })
+      .filter(function(x) {
+        return x !== null && !isNaN(x);
+      });
+
+    const avgGrowth =
+      validGrowth.length > 0
+        ? validGrowth.reduce(function(a, b) {
+            return a + b;
+          }, 0) / validGrowth.length
+        : null;
+
+    const stockCounter = {};
+
+    fundData.forEach(function(fund) {
+      fund.holdings.forEach(function(item) {
+        if (!stockCounter[item.stock]) {
+          stockCounter[item.stock] = 0;
+        }
+
+        stockCounter[item.stock]++;
+      });
+    });
+
+    const overlapStocks = Object.entries(stockCounter)
+      .filter(function(item) {
+        return item[1] >= 2;
+      })
+      .map(function(item) {
+        return item[0];
+      });
+
+    let bestFund = null;
+
+    fundData.forEach(function(fund) {
+      if (fund.growth !== null && !isNaN(fund.growth)) {
+        if (!bestFund || fund.growth > bestFund.growth) {
+          bestFund = fund;
+        }
+      }
+    });
+
+    document.getElementById("summary").innerHTML = `
+      <p>✅ 当前共分析 <strong>${fundData.length}</strong> 支基金。</p>
+
+      <p>
+        📈 平均近一个月涨幅：
+        <strong>
+          ${avgGrowth === null ? "暂无数据" : avgGrowth.toFixed(2) + "%"}
+        </strong>
+      </p>
+
+      <p>
+        🏆 近一个月表现较好的基金：
+        <strong>
+          ${bestFund ? bestFund.name + "（" + bestFund.growth.toFixed(2) + "%）" : "暂无数据"}
+        </strong>
+      </p>
+
+      <p>
+        🔁 多基金共同重仓股：
+        <strong>
+          ${overlapStocks.length > 0 ? overlapStocks.join("、") : "暂无明显重合"}
+        </strong>
+      </p>
+
+      <p>
+        🤖 简易判断：
+        如果多个基金前五持仓高度重合，说明组合分散度可能不足；
+        如果近一个月涨幅差异较大，建议结合基金行业主题、波动率和长期表现进一步比较。
+      </p>
+    `;
+  }
+
+  function exportExcel() {
+    if (fundData.length === 0) {
+      alert("请先点击“确定”生成数据");
+      return;
+    }
+
+    const rows = fundData.map(function(fund) {
+      const row = {
+        基金名称: fund.name,
+        基金代码: fund.code,
+        近一个月涨幅:
+          fund.growth === null || isNaN(fund.growth)
+            ? "暂无数据"
+            : fund.growth.toFixed(2) + "%"
+      };
+
+      for (let i = 0; i < 5; i++) {
+        const item = fund.holdings[i];
+
+        row["持仓" + (i + 1)] = item ? item.stock : "";
+        row["比例" + (i + 1)] = item ? item.ratio : "";
+      }
+
+      return row;
+    });
+
+    if (typeof XLSX === "undefined") {
+      alert("Excel导出组件加载失败，请使用CSV导出");
+      return;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, "基金对比");
+    XLSX.writeFile(wb, "基金持仓与涨幅对比.xlsx");
+  }
+
+  function exportCSV() {
+    if (fundData.length === 0) {
+      alert("请先点击“确定”生成数据");
+      return;
+    }
+
+    const headers = [
+      "基金名称",
+      "基金代码",
+      "近一个月涨幅",
+      "持仓1",
+      "比例1",
+      "持仓2",
+      "比例2",
+      "持仓3",
+      "比例3",
+      "持仓4",
+      "比例4",
+      "持仓5",
+      "比例5"
+    ];
+
+    const rows = fundData.map(function(fund) {
+      const row = [
+        fund.name,
+        fund.code,
+        fund.growth === null || isNaN(fund.growth)
+          ? "暂无数据"
+          : fund.growth.toFixed(2) + "%"
+      ];
+
+      for (let i = 0; i < 5; i++) {
+        const item = fund.holdings[i];
+
+        row.push(item ? item.stock : "");
+        row.push(item ? item.ratio : "");
+      }
+
+      return row;
+    });
+
+    let csv = headers.join(",") + "\n";
+
+    rows.forEach(function(row) {
+      csv +=
+        row
+          .map(function(value) {
+            return '"' + String(value).replace(/"/g, '""') + '"';
+          })
+          .join(",") + "\n";
+    });
+
+    const blob = new Blob(["\ufeff" + csv], {
+      type: "text/csv;charset=utf-8;"
+    });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "基金持仓与涨幅对比.csv";
+    link.click();
+  }
+
+  document.getElementById("fundCodes").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      loadFunds();
+    }
+  });
+</script>
+
+</body>
+</html>
