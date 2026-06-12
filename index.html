@@ -1,137 +1,682 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Content-Type": "application/json; charset=utf-8",
-  "Cache-Control": "no-store"
-};
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport background: #f5f7fb;  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      color: #1f2937;
+    }
 
-export default {
-  async fetch(request, env, ctx) {
-    try {
-      if (request.method === "OPTIONS") {
-        return new Response(null, { headers: corsHeaders });
+    .container {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0 0 8px;
+      color: #111827;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 96px;
+      resize: vertical;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 15px;
+      outline: none;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e7ff;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .status.info {
+      display: block;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .status.success {
+      display: block;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .status.error {
+      display: block;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .summary-item {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 850px;
+    }
+
+    th, td {
+      padding: 11px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    tr:hover td {
+      background: #f9fafb;
+    }
+
+    .positive {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .negative {
+      color: #16a34a;
+      font-weight: 700;
+    }
+
+    .neutral {
+      color: #4b5563;
+      font-weight: 700;
+    }
+
+    .tag-ok {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 12px;
+    }
+
+    .tag-fail {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-size: 12px;
+    }
+
+    .tips {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.7;
+    }
+
+    .code {
+      font-family: Menlo, Monaco, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .footer {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        margin: 18px auto;
       }
 
-      const url = new URL(request.url);
-
-      if (url.pathname !== "/fund") {
-        return json({
-          success: false,
-          message: "Not found. Please use /fund?codes=000001"
-        }, 404);
+      h1 {
+        font-size: 21px;
       }
 
-      const codesParam = url.searchParams.get("codes") || "";
-      const codes = codesParam
+      .card {
+        padding: 16px;
+        border-radius: 14px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="card">
+      <h1>Fund Tool - 基金查询工具</h1>
+      <div class="subtitle">
+        输入一个或多个基金代码，查询天天基金公开实时估值数据，并支持导出 CSV。
+        <br />
+        多个代码可以用逗号、空格或换行分隔，例如：
+        <span class="code">012348, 000001, 161725</span>
+      </div>
+
+      <label for="fundCodes">基金代码</label>
+      <textarea id="fundCodes" placeholder="例如：012348, 000001, 161725"></textarea>
+
+      <div class="actions">
+        <button class="btn-primary" id="queryBtn" onclick="loadFunds()">查询基金</button>
+        <button class="btn-secondary" id="exportBtn" onclick="exportCSV()" disabled>导出 CSV</button>
+        <button class="btn-danger" onclick="clearAll()">清空</button>
+      </div>
+
+      <div id="statusBox" class="status"></div>
+    </div>
+
+    <div class="card" id="summaryCard" style="display:none;">
+      <h2 style="font-size:18px;margin:0;">查询概览</h2>
+      <div class="summary">
+        <div class="summary-item">
+          <div class="summary-label">输入基金数量</div>
+          <div class="summary-value" id="totalCount">0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">成功返回</div>
+          <div class="summary-value" id="successCount">0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">失败数量</div>
+          <div class="summary-value" id="failCount">0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">最后更新时间</div>
+          <div class="summary-value" id="lastUpdate" style="font-size:14px;">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+      <h2 style="font-size:18px;margin:0;">查询结果</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>状态</th>
+              <th>基金代码</th>
+              <th>基金名称</th>
+              <th>净值日期</th>
+              <th>单位净值</th>
+              <th>估算净值</th>
+              <th>估算涨幅</th>
+              <th>估算时间</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody id="fundTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        数据来源：天天基金公开实时估值接口。估算数据仅供参考，实际净值以基金公司正式披露为准。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tips">
+        <strong>提示：</strong>
+        如果在公司网络下显示抓取失败，但手机网络可以正常使用，通常说明公司网络拦截了
+        <span class="code">workers.dev</span>
+        域名。可以使用手机热点、申请 IT 放行，或后续绑定自定义域名。
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ==============================
+    // 重要：API 地址
+    // 如果以后你绑定了自定义域名，只需要改这里。
+    // ==============================
+    const API_BASE = "https://long-feather-af2d.claricema.workers.dev/fund?codes=";
+
+    let currentFunds = [];
+
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    function showStatus(message, type = "info") {
+      const box = $("statusBox");
+      box.className = "status " + type;
+      box.innerHTML = message;
+    }
+
+    function hideStatus() {
+      const box = $("statusBox");
+      box.className = "status";
+      box.innerHTML = "";
+    }
+
+    function escapeHTML(value) {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function safe(value) {
+      if (value === null || value === undefined || value === "undefined") {
+        return "-";
+      }
+      const s = String(value).trim();
+      return s === "" ? "-" : s;
+    }
+
+    function parseCodes(input) {
+      return input
         .split(/[,，\s\n]+/)
         .map(x => x.trim())
         .filter(Boolean);
+    }
+
+    function normalizeFund(item) {
+      item = item || {};
+
+      return {
+        success: item.success !== false,
+
+        code: item.code || item.fundcode || item.fundCode || "-",
+        name: item.name || item.fundName || "-",
+
+        navDate: item.navDate || item.jzrq || "-",
+        unitNav: item.unitNav || item.dwjz || item.nav || "-",
+        estimateNav: item.estimateNav || item.gsz || "-",
+        estimateRate: item.estimateRate || item.gszzl || item.rate || "-",
+        updateTime: item.updateTime || item.gztime || "-",
+
+        message: item.message || item.error || "",
+        source: item.source || ""
+      };
+    }
+
+    function rateClass(rateValue) {
+      const n = parseFloat(String(rateValue).replace("%", ""));
+      if (!Number.isFinite(n)) return "neutral";
+      if (n > 0) return "positive";
+      if (n < 0) return "negative";
+      return "neutral";
+    }
+
+    function formatRate(rateValue) {
+      if (rateValue === null || rateValue === undefined || rateValue === "" || rateValue === "-") {
+        return "-";
+      }
+
+      const text = String(rateValue).trim();
+
+      if (text.endsWith("%")) {
+        return text;
+      }
+
+      return text + "%";
+    }
+
+    async function loadFunds() {
+      const input = $("fundCodes").value.trim();
+      const codes = parseCodes(input);
 
       if (!codes.length) {
-        return json({
-          success: false,
-          message: "Missing codes parameter. Example: /fund?codes=000001,012348"
-        }, 400);
+        showStatus("请输入至少一个 6 位基金代码。", "error");
+        return;
       }
 
-      const results = [];
+      const invalidCodes = codes.filter(code => !/^\d{6}$/.test(code));
 
-      for (const code of codes) {
-        const result = await fetchSingleFund(code);
-        results.push(result);
+      if (invalidCodes.length) {
+        showStatus("以下基金代码格式不正确：" + invalidCodes.join(", ") + "。基金代码应为 6 位数字。", "error");
+        return;
       }
 
-      return json({
-        success: true,
-        count: results.length,
-        data: results,
-        results: results,
-        fetchedAt: new Date().toISOString()
+      $("queryBtn").disabled = true;
+      $("exportBtn").disabled = true;
+      currentFunds = [];
+
+      $("summaryCard").style.display = "none";
+      $("resultCard").style.display = "none";
+      $("fundTableBody").innerHTML = "";
+
+      showStatus("正在抓取数据，请稍候……", "info");
+
+      try {
+        const apiUrl = API_BASE + encodeURIComponent(codes.join(","));
+
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error("API 请求失败：HTTP " + response.status);
+        }
+
+        const json = await response.json();
+
+        console.log("Worker 返回数据：", json);
+
+        if (!json.success) {
+          throw new Error(json.message || json.error || "Worker 返回失败");
+        }
+
+        let rawFunds = [];
+
+        if (Array.isArray(json.data)) {
+          rawFunds = json.data;
+        } else if (Array.isArray(json.results)) {
+          rawFunds = json.results;
+        } else if (Array.isArray(json)) {
+          rawFunds = json;
+        } else if (json.data && typeof json.data === "object") {
+          rawFunds = [json.data];
+        } else {
+          throw new Error("API 返回格式不符合预期");
+        }
+
+        currentFunds = rawFunds.map(normalizeFund);
+
+        renderFunds(currentFunds);
+
+        const successCount = currentFunds.filter(x => x.success).length;
+        const failCount = currentFunds.length - successCount;
+
+        $("summaryCard").style.display = "block";
+        $("resultCard").style.display = "block";
+
+        $("totalCount").textContent = String(currentFunds.length);
+        $("successCount").textContent = String(successCount);
+        $("failCount").textContent = String(failCount);
+        $("lastUpdate").textContent = new Date().toLocaleString("zh-CN");
+
+        $("exportBtn").disabled = currentFunds.length === 0;
+
+        if (failCount > 0) {
+          showStatus("查询完成，其中 " + failCount + " 条失败。请查看表格备注。", "error");
+        } else {
+          showStatus("查询成功，共返回 " + successCount + " 条基金数据。", "success");
+        }
+
+      } catch (error) {
+        console.error(error);
+
+        showStatus(
+          "抓取失败：" + escapeHTML(error.message || String(error)) +
+          "<br><br>如果你正在使用公司网络，请尝试切换到手机热点。你之前已验证手机网络可以正常访问 Worker。",
+          "error"
+        );
+
+      } finally {
+        $("queryBtn").disabled = false;
+      }
+    }
+
+    function renderFunds(funds) {
+      const tbody = $("fundTableBody");
+
+      if (!funds.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9">暂无数据</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = funds.map(fund => {
+        const statusTag = fund.success
+          ? `<span class="tag-ok">成功</span>`
+          : `<span class="tag-fail">失败</span>`;
+
+        const rateText = formatRate(fund.estimateRate);
+        const cls = rateClass(fund.estimateRate);
+
+        return `
+          <tr>
+            <td>${statusTag}</td>
+            <td>${escapeHTML(safe(fund.code))}</td>
+            <td>${escapeHTML(safe(fund.name))}</td>
+            <td>${escapeHTML(safe(fund.navDate))}</td>
+            <td>${escapeHTML(safe(fund.unitNav))}</td>
+            <td>${escapeHTML(safe(fund.estimateNav))}</td>
+            <td class="${cls}">${escapeHTML(rateText)}</td>
+            <td>${escapeHTML(safe(fund.updateTime))}</td>
+            <td>${escapeHTML(safe(fund.message || fund.source || "-"))}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function csvEscape(value) {
+      if (value === null || value === undefined) return "";
+      const s = String(value);
+      if (/[",\n\r]/.test(s)) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    function exportCSV() {
+      if (!currentFunds.length) {
+        showStatus("没有可导出的数据，请先查询。", "error");
+        return;
+      }
+
+      const headers = [
+        "状态",
+        "基金代码",
+        "基金名称",
+        "净值日期",
+        "单位净值",
+        "估算净值",
+        "估算涨幅",
+        "估算时间",
+        "备注"
+      ];
+
+      const rows = currentFunds.map(fund => [
+        fund.success ? "成功" : "失败",
+        safe(fund.code),
+        safe(fund.name),
+        safe(fund.navDate),
+        safe(fund.unitNav),
+        safe(fund.estimateNav),
+        formatRate(fund.estimateRate),
+        safe(fund.updateTime),
+        safe(fund.message || fund.source || "")
+      ]);
+
+      const csv = [
+        headers.map(csvEscape).join(","),
+        ...rows.map(row => row.map(csvEscape).join(","))
+      ].join("\r\n");
+
+      const now = new Date();
+      const pad = n => String(n).padStart(2, "0");
+      const filename =
+        "fund-data-" +
+        now.getFullYear() +
+        pad(now.getMonth() + 1) +
+        pad(now.getDate()) +
+        "-" +
+        pad(now.getHours()) +
+        pad(now.getMinutes()) +
+        ".csv";
+
+      const blob = new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8"
       });
 
-    } catch (err) {
-      return json({
-        success: false,
-        message: "Worker fatal error",
-        error: err && err.message ? err.message : String(err)
-      }, 500);
-    }
-  }
-};
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
 
-async function fetchSingleFund(code) {
-  try {
-    if (!/^\d{6}$/.test(code)) {
-      return {
-        success: false,
-        code,
-        fundcode: code,
-        message: "Invalid fund code. Fund code should be 6 digits."
-      };
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+
+      showStatus("CSV 已导出：" + filename, "success");
     }
 
-    const apiUrl = `https://fundgz.1234567.com.cn/js/${code}.js?rt=${Date.now()}`;
+    function clearAll() {
+      $("fundCodes").value = "";
+      currentFunds = [];
+      $("fundTableBody").innerHTML = "";
+      $("summaryCard").style.display = "none";
+      $("resultCard").style.display = "none";
+      $("exportBtn").disabled = true;
+      hideStatus();
+    }
 
-    const resp = await fetch(apiUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://fund.eastmoney.com/"
+    // 支持 Command/Ctrl + Enter 查询
+    document.addEventListener("keydown", function(event) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        loadFunds();
       }
     });
+  </script>
+</body>
+</html>
 
-    const text = await resp.text();
+  <title>Fund Tool - 基金查询工具</title>
 
-    const match = text.match(/jsonpgz\((.*)\);?/);
-
-    if (!match) {
-      return {
-        success: false,
-        code,
-        fundcode: code,
-        message: "Unexpected API response",
-        raw: text.slice(0, 300)
-      };
+  <style>
+    * {
+      box-sizing: border-box;
     }
 
-    const data = JSON.parse(match[1]);
-
-    return {
-      success: true,
-
-      // 标准字段，前端优先读取这些
-      code: data.fundcode || code,
-      name: data.name || "",
-      navDate: data.jzrq || "",
-      unitNav: data.dwjz || "",
-      estimateNav: data.gsz || "",
-      estimateRate: data.gszzl || "",
-      updateTime: data.gztime || "",
-
-      // 保留天天基金原始字段，兼容旧前端
-      fundcode: data.fundcode || code,
-      jzrq: data.jzrq || "",
-      dwjz: data.dwjz || "",
-      gsz: data.gsz || "",
-      gszzl: data.gszzl || "",
-      gztime: data.gztime || "",
-
-      source: "天天基金公开实时估值接口"
-    };
-
-  } catch (err) {
-    return {
-      success: false,
-      code,
-      fundcode: code,
-      message: err && err.message ? err.message : String(err)
-    };
-  }
-}
-
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj, null, 2), {
-    status,
-    headers: corsHeaders
-  });
-}
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
