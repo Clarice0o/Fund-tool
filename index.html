@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fund Tool - 基金查询工具</title>
+
+  <title>Fund Tool - 基金持仓与涨幅查询</title>
 
   <style>
     body {
@@ -14,22 +15,27 @@
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1180px;
       margin: 32px auto;
       padding: 0 16px;
     }
 
     .card {
       background: #fff;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 22px;
       margin-bottom: 18px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     }
 
     h1 {
-      margin: 0 0 10px;
+      margin: 0 0 8px;
       font-size: 24px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
     }
 
     .desc {
@@ -41,13 +47,14 @@
 
     textarea {
       width: 100%;
-      min-height: 90px;
+      min-height: 88px;
       padding: 12px;
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid #d1d5db;
       font-size: 15px;
       resize: vertical;
       box-sizing: border-box;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
     }
 
     .buttons {
@@ -115,26 +122,99 @@
       border: 1px solid #fecaca;
     }
 
-    .table-wrap {
-      overflow-x: auto;
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 800px;
-    }
-
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #e5e7eb;
-      text-align: left;
-      font-size: 14px;
-      white-space: nowrap;
-    }
-
-    th {
+    .summary-box {
+      border: 1px solid #e5e7eb;
       background: #f9fafb;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .summary-label {
+      color: #6b7280;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .fund-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+      background: #fff;
+    }
+
+    .fund-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+
+    .fund-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .fund-code {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .tag-ok {
+      background: #dcfce7;
+      color: #166534;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      display: inline-block;
+    }
+
+    .tag-fail {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      display: inline-block;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .info-item {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 11px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      font-size: 15px;
       font-weight: 700;
     }
 
@@ -153,20 +233,47 @@
       font-weight: 700;
     }
 
-    .tag-ok {
-      background: #dcfce7;
-      color: #166534;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 12px;
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 14px 0 8px;
     }
 
-    .tag-fail {
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 12px;
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    th, td {
+      padding: 9px 8px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f9fafb;
+      font-weight: 700;
+    }
+
+    .ai-box {
+      background: #f8fafc;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      padding: 13px;
+      line-height: 1.7;
+      font-size: 14px;
+      color: #1f2937;
+    }
+
+    .ai-box strong {
+      color: #1d4ed8;
     }
 
     .note {
@@ -183,17 +290,21 @@
       button {
         width: 100%;
       }
+
+      .container {
+        margin: 18px auto;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <div class="card">
-      <h1>Fund Tool - 基金查询工具</h1>
 
+    <div class="card">
+      <h1>Fund Tool - 基金持仓与涨幅查询</h1>
       <div class="desc">
-        输入一个或多个基金代码，查询天天基金公开实时估值数据，并支持导出 CSV。
+        输入基金代码，查询实时估值、近一个月涨幅、前五主要持仓，并生成简单 AI 分析。
         <br />
         多个代码可以用逗号、空格或换行分隔，例如：012348, 000001, 161725
       </div>
@@ -209,34 +320,40 @@
       <div id="statusBox" class="status"></div>
     </div>
 
-    <div class="card" id="resultCard" style="display:none;">
-      <h2 style="font-size:18px;margin-top:0;">查询结果</h2>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>状态</th>
-              <th>基金代码</th>
-              <th>基金名称</th>
-              <th>净值日期</th>
-              <th>单位净值</th>
-              <th>估算净值</th>
-              <th>估算涨幅</th>
-              <th>估算时间</th>
-              <th>备注</th>
-            </tr>
-          </thead>
-          <tbody id="fundTableBody"></tbody>
-        </table>
+    <div class="card" id="summaryCard" style="display:none;">
+      <h2>查询概览</h2>
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="summary-label">基金数量</div>
+          <div class="summary-value" id="totalCount">0</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">成功数量</div>
+          <div class="summary-value" id="successCount">0</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">失败数量</div>
+          <div class="summary-value" id="failCount">0</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">页面更新时间</div>
+          <div class="summary-value" id="lastUpdate" style="font-size:14px;">-</div>
+        </div>
       </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+      <h2>查询结果</h2>
+      <div id="fundList"></div>
     </div>
 
     <div class="card">
       <div class="note">
-        提示：如果在公司网络下抓取失败，但手机网络可以正常使用，通常是公司网络拦截了 workers.dev 域名。
+        说明：数据来源于天天基金 / 东方财富公开数据。实时估值和简易 AI 分析仅供参考，不构成投资建议。
+        如果公司网络无法访问，通常是 workers.dev 被公司网络拦截，可使用手机热点或后续绑定自定义域名。
       </div>
     </div>
+
   </div>
 
   <script>
@@ -271,9 +388,7 @@
     }
 
     function safe(value) {
-      if (value === null || value === undefined || value === "" || value === "undefined") {
-        return "-";
-      }
+      if (value === null || value === undefined || value === "" || value === "undefined") return "-";
       return String(value).trim() || "-";
     }
 
@@ -289,13 +404,18 @@
 
       return {
         success: item.success !== false,
-        code: item.code || item.fundcode || item.fundCode || "-",
+        code: item.code || item.fundcode || "-",
         name: item.name || item.fundName || "-",
         navDate: item.navDate || item.jzrq || "-",
-        unitNav: item.unitNav || item.dwjz || item.nav || "-",
+        unitNav: item.unitNav || item.dwjz || "-",
         estimateNav: item.estimateNav || item.gsz || "-",
-        estimateRate: item.estimateRate || item.gszzl || item.rate || "-",
+        estimateRate: item.estimateRate || item.gszzl || "-",
         updateTime: item.updateTime || item.gztime || "-",
+        monthReturnText: item.monthReturnText || "-",
+        monthWindow: item.monthWindow || "-",
+        holdingsAsOf: item.holdingsAsOf || "-",
+        holdingsTop5: Array.isArray(item.holdingsTop5) ? item.holdingsTop5 : [],
+        aiSummary: item.aiSummary || null,
         message: item.message || item.error || item.source || "-"
       };
     }
@@ -332,11 +452,12 @@
 
       $("queryBtn").disabled = true;
       $("exportBtn").disabled = true;
+      $("summaryCard").style.display = "none";
       $("resultCard").style.display = "none";
-      $("fundTableBody").innerHTML = "";
+      $("fundList").innerHTML = "";
       currentFunds = [];
 
-      showStatus("正在抓取数据，请稍候……", "info");
+      showStatus("正在抓取实时估值、持仓和近一个月净值数据，请稍候……", "info");
 
       try {
         const apiUrl = API_BASE + encodeURIComponent(codes.join(","));
@@ -374,11 +495,17 @@
 
         renderFunds(currentFunds);
 
-        $("resultCard").style.display = "block";
-        $("exportBtn").disabled = currentFunds.length === 0;
-
         const successCount = currentFunds.filter(x => x.success).length;
         const failCount = currentFunds.length - successCount;
+
+        $("totalCount").textContent = String(currentFunds.length);
+        $("successCount").textContent = String(successCount);
+        $("failCount").textContent = String(failCount);
+        $("lastUpdate").textContent = new Date().toLocaleString("zh-CN");
+
+        $("summaryCard").style.display = "block";
+        $("resultCard").style.display = "block";
+        $("exportBtn").disabled = currentFunds.length === 0;
 
         if (failCount > 0) {
           showStatus("查询完成，其中 " + failCount + " 条失败。", "error");
@@ -395,30 +522,109 @@
     }
 
     function renderFunds(funds) {
-      const tbody = $("fundTableBody");
+      const container = $("fundList");
 
-      tbody.innerHTML = funds.map(fund => {
+      container.innerHTML = funds.map(fund => {
         const tag = fund.success
           ? '<span class="tag-ok">成功</span>'
           : '<span class="tag-fail">失败</span>';
 
-        const rate = formatRate(fund.estimateRate);
-        const cls = rateClass(fund.estimateRate);
+        const estimateRateText = formatRate(fund.estimateRate);
+        const estimateRateClass = rateClass(fund.estimateRate);
+        const monthRateClass = rateClass(fund.monthReturnText);
+
+        const holdingsHtml = renderHoldingsTable(fund.holdingsTop5);
+
+        const ai = fund.aiSummary || {};
+        const aiHtml = `
+          <div class="ai-box">
+            <div><strong>趋势：</strong>${escapeHTML(safe(ai.trend || "-"))}</div>
+            <div><strong>风险：</strong>${escapeHTML(safe(ai.risk || "-"))}</div>
+            <div><strong>建议：</strong>${escapeHTML(safe(ai.action || "-"))}</div>
+            <div style="color:#6b7280;font-size:12px;margin-top:6px;">${escapeHTML(safe(ai.disclaimer || "仅供参考，不构成投资建议。"))}</div>
+          </div>
+        `;
 
         return `
-          <tr>
-            <td>${tag}</td>
-            <td>${escapeHTML(safe(fund.code))}</td>
-            <td>${escapeHTML(safe(fund.name))}</td>
-            <td>${escapeHTML(safe(fund.navDate))}</td>
-            <td>${escapeHTML(safe(fund.unitNav))}</td>
-            <td>${escapeHTML(safe(fund.estimateNav))}</td>
-            <td class="${cls}">${escapeHTML(rate)}</td>
-            <td>${escapeHTML(safe(fund.updateTime))}</td>
-            <td>${escapeHTML(safe(fund.message))}</td>
-          </tr>
+          <div class="fund-card">
+            <div class="fund-header">
+              <div>
+                <div class="fund-title">${escapeHTML(safe(fund.name))}</div>
+                <div class="fund-code">基金代码：${escapeHTML(safe(fund.code))}</div>
+              </div>
+              <div>${tag}</div>
+            </div>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">净值日期</div>
+                <div class="info-value">${escapeHTML(safe(fund.navDate))}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">单位净值</div>
+                <div class="info-value">${escapeHTML(safe(fund.unitNav))}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">估算净值</div>
+                <div class="info-value">${escapeHTML(safe(fund.estimateNav))}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">估算涨幅</div>
+                <div class="info-value ${estimateRateClass}">${escapeHTML(estimateRateText)}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">近一个月涨幅</div>
+                <div class="info-value ${monthRateClass}">${escapeHTML(safe(fund.monthReturnText))}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">近一月区间</div>
+                <div class="info-value" style="font-size:13px;">${escapeHTML(safe(fund.monthWindow))}</div>
+              </div>
+            </div>
+
+            <div class="section-title">前五主要持仓（报告期：${escapeHTML(safe(fund.holdingsAsOf))}）</div>
+            ${holdingsHtml}
+
+            <div class="section-title">简单 AI 分析</div>
+            ${aiHtml}
+          </div>
         `;
       }).join("");
+    }
+
+    function renderHoldingsTable(items) {
+      if (!items || !items.length) {
+        return '<div class="note">未获取到前五持仓数据，可能该基金暂无股票持仓或公开接口未返回。</div>';
+      }
+
+      const rows = items.map((h, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHTML(safe(h.stockCode))}</td>
+          <td>${escapeHTML(safe(h.stockName))}</td>
+          <td>${escapeHTML(safe(h.weight))}</td>
+          <td>${escapeHTML(safe(h.shares))}</td>
+          <td>${escapeHTML(safe(h.marketValue))}</td>
+        </tr>
+      `).join("");
+
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>股票代码</th>
+                <th>股票名称</th>
+                <th>占净值比</th>
+                <th>持股数</th>
+                <th>持仓市值</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
     }
 
     function csvEscape(value) {
@@ -437,28 +643,56 @@
       }
 
       const headers = [
-        "状态",
         "基金代码",
         "基金名称",
         "净值日期",
         "单位净值",
         "估算净值",
         "估算涨幅",
-        "估算时间",
-        "备注"
+        "近一个月涨幅",
+        "近一月区间",
+        "持仓报告期",
+        "持仓序号",
+        "股票代码",
+        "股票名称",
+        "占净值比",
+        "持股数",
+        "持仓市值",
+        "AI趋势",
+        "AI风险",
+        "AI建议"
       ];
 
-      const rows = currentFunds.map(fund => [
-        fund.success ? "成功" : "失败",
-        safe(fund.code),
-        safe(fund.name),
-        safe(fund.navDate),
-        safe(fund.unitNav),
-        safe(fund.estimateNav),
-        formatRate(fund.estimateRate),
-        safe(fund.updateTime),
-        safe(fund.message)
-      ]);
+      const rows = [];
+
+      currentFunds.forEach(fund => {
+        const holdings = fund.holdingsTop5 && fund.holdingsTop5.length
+          ? fund.holdingsTop5
+          : [{}];
+
+        holdings.forEach((h, index) => {
+          rows.push([
+            safe(fund.code),
+            safe(fund.name),
+            safe(fund.navDate),
+            safe(fund.unitNav),
+            safe(fund.estimateNav),
+            formatRate(fund.estimateRate),
+            safe(fund.monthReturnText),
+            safe(fund.monthWindow),
+            safe(fund.holdingsAsOf),
+            h.stockCode ? index + 1 : "",
+            safe(h.stockCode || ""),
+            safe(h.stockName || ""),
+            safe(h.weight || ""),
+            safe(h.shares || ""),
+            safe(h.marketValue || ""),
+            safe(fund.aiSummary && fund.aiSummary.trend),
+            safe(fund.aiSummary && fund.aiSummary.risk),
+            safe(fund.aiSummary && fund.aiSummary.action)
+          ]);
+        });
+      });
 
       const csv = [
         headers.map(csvEscape).join(","),
@@ -466,7 +700,7 @@
       ].join("\r\n");
 
       const now = new Date();
-      const filename = "fund-data-" + now.getTime() + ".csv";
+      const filename = "fund-full-data-" + now.getTime() + ".csv";
 
       const blob = new Blob(["\uFEFF" + csv], {
         type: "text/csv;charset=utf-8"
@@ -489,7 +723,8 @@
     function clearAll() {
       $("fundCodes").value = "";
       currentFunds = [];
-      $("fundTableBody").innerHTML = "";
+      $("fundList").innerHTML = "";
+      $("summaryCard").style.display = "none";
       $("resultCard").style.display = "none";
       $("exportBtn").disabled = true;
       hideStatus();
@@ -497,4 +732,3 @@
   </script>
 </body>
 </html>
-
